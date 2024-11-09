@@ -1,0 +1,13 @@
+apiVersion: v1
+entries:
+  web:
+  - apiVersion: v2
+    created: "2024-11-09T12:22:12.379710472Z"
+    description: Helm chart to use across common web apps
+    digest: 36f91611cb2aebf87cf440327815290ea924696cda2039ea54593af82abb0a50
+    name: web
+    type: application
+    urls:
+    - https://github.com/sajtiii/helm-charts/releases/download/web-0.1.0/web-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-11-09T12:22:12.379717566Z"
