@@ -1,0 +1,39 @@
+{{- define "service.template" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+spec:
+  clusterIP: None
+  selector:
+    app: {{ .appName | default .name }}
+  ports:
+    {{- range .ports }}
+    - name: {{ .name }}
+      protocol: {{ .protocol | default "TCP" }}
+      port: {{ .port }}
+      targetPort: {{ .name }}
+    {{- end }}
+{{- end }}
+
+{{- if gt (len .Values.ports) 0 -}}
+{{- include "service.template" (dict "name" (include "name" $) "ports" .Values.ports) }}
+{{- if eq .Values.rollout.strategy "canary" }}
+---
+{{- include "service.template" (dict "name" (printf "%s-canary" (include "name" $)) "appName" (include "name" $) "ports" .Values.ports) }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: TraefikService
+metadata:
+  name: {{ include "name" $ }}
+spec:
+  weighted:
+    services:
+      {{- range .Values.ports }}
+      - name: {{ include "name" $ }}
+        port: {{ .name }}
+      - name: {{ include "name" $ }}-canary
+        port: {{ .name }}
+      {{- end }}
+{{- end }}
+{{- end }}

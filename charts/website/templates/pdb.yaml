@@ -1,0 +1,14 @@
+{{- if kindIs "map" .Values.pdb -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "name" $ }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  {{- if .Values.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "name" $ }}
+{{- end }}

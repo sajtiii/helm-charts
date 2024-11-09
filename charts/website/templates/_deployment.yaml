@@ -1,0 +1,148 @@
+{{- define "deployment.template" }}
+{{- with .Values }}
+{{- $name := include "name" $ }}
+{{- if not (kindIs "map" .hpa) }}
+replicas: {{ .replicas }}
+{{- end }}
+revisionHistoryLimit: {{ .revisions }}
+selector:
+  matchLabels:
+    app: {{ $name }}
+template:
+  metadata:
+    labels:
+      app: {{ $name }}
+    annotations:
+      {{- if kindIs "map" .serviceMesh }}
+      linkerd.io/inject: "enabled"
+      config.linkerd.io/skip-outbound-ports: {{ join "," .serviceMesh.skipOutboundPorts | quote }}
+      config.linkerd.io/proxy-cpu-limit: "0.5"
+      config.linkerd.io/proxy-cpu-request: "0.1"
+      config.linkerd.io/proxy-memory-limit: "512Mi"
+      config.linkerd.io/proxy-memory-request: "128Mi"
+      {{- end }}
+      {{- if and (kindIs "map" .secrets) (gt (len .secrets) 0)  }}
+      vault.hashicorp.com/agent-inject: "true"
+      vault.hashicorp.com/agent-pre-populate-only: "true"
+      vault.hashicorp.com/role: {{ $.Release.Namespace }}
+      {{- if kindIs "map" .secrets.environment }}
+      {{- $secretIndex := 0 }}
+      {{- range .secrets.environment.paths }}
+      {{- $path := printf "%s/%s/%s" $.Values.secrets.environment.root $.Release.Namespace $.Chart.Name }}
+      {{- $fileName := printf "%02d-%s" $secretIndex . }}
+      {{- $secretIndex = add1 $secretIndex }}
+      vault.hashicorp.com/agent-inject-secret-{{ $fileName }}: "{{ $path }}"
+      vault.hashicorp.com/agent-inject-template-{{ $fileName }}: |
+          {{`{{- with secret "secret/data/`}}{{ $path }}{{`" }}
+          {{- range $k, $v := .Data.data }}
+              {{- if not (contains "$" $v) }}
+              export {{ $k }}="{{ $v }}"
+              {{- end }}
+          {{- end }}
+          {{- range $k, $v := .Data.data }}
+              {{- if contains "$" $v }}
+              export {{ $k }}="{{ $v }}"
+              {{- end }}
+          {{- end }}
+          {{- end }}`}}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+  spec:
+    serviceAccountName: {{ $.Release.Namespace }}-account
+    priorityClassName: {{ $name }}
+    containers:
+      - name: "app"
+        image: {{ .image.repository }}:{{ .image.tag }}
+        imagePullPolicy: {{ .image.pullPolicy }}
+        {{- if .command }}
+        command: {{ include "command" .command }}
+        {{- end }}
+        {{- if .args }}
+        args: {{ include "command" .args }}
+        {{- end }}
+        {{- if .env }}
+        env:
+          {{- range .env }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+        {{- end }}
+        ports:
+          {{- range .ports }}
+          - name: {{ .name }}
+            containerPort: {{ .port }}
+            protocol: {{ .protocol | default "TCP"}}
+          {{- end }}
+        {{- if kindIs "map" .healthcheck }}
+        livenessProbe:
+          {{- include "healthcheck.definition" .healthcheck.liveness | nindent 10 }}
+        readinessProbe:
+          {{- include "healthcheck.definition" .healthcheck.readiness | nindent 10 }}
+        {{- end }}
+        resources:
+          limits:
+            cpu: {{ .resources.limits.cpu | quote }}
+            memory: {{ .resources.limits.memory | quote }}
+          requests:
+            cpu: {{ .resources.requests.cpu | quote }}
+            memory: {{ .resources.requests.memory | quote }}
+        volumeMounts:
+          {{- if (.secret).mounts }}
+          {{- range .secret.mounts }}
+          - name: secret
+              subPath: {{ .source }}
+              mountPath: {{ .target }}
+              readOnly: true
+          {{- end }} 
+          {{- end }} 
+          {{- if .volumes }}
+          {{- range .volumes }}
+          - name: volume-{{ .name }}
+              mountPath: {{ .target }}
+          {{- end }}
+          {{- end }}
+        {{- if kindIs "map" .securityContext }}
+        securityContext:
+          {{ toYaml .securityContext | nindent 10 }}
+        {{- end}} 
+
+    volumes:
+      {{- if (.secret).mounts }}
+      - name: secret
+          csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+              secretProviderClass: {{ (.secret).name | default .name }}
+      {{- end }}
+      {{- if .volumes }}
+      {{- range .volumes }}
+      - name: volume-{{ .name }}
+          persistentVolumeClaim:
+          claimName: {{ $name }}-volume-{{ .name }}
+      {{- end }}
+      {{- end }}
+{{- end }}
+{{- end }}
+
+
+{{- define "healthcheck.definition" }}
+{{- if eq .type "http" -}}
+httpGet:
+  port: {{ .port }}
+  path: {{ .path }}
+{{- end }}
+{{- if eq .type "cmd" -}}
+exec:
+  command: {{ include "command" .cmd }}
+{{- end }}
+{{- if eq .type "custom" -}}
+{{- toYaml .definition }}
+{{- end }}
+initialDelaySeconds: {{ .initialDelay }}
+timeoutSeconds: {{ .timeout }}
+failureThreshold: {{ .failureThreshold | default 3 }}
+successThreshold: {{ .successThreshold | default 1 }}
+periodSeconds: {{ .period }}
+{{- end }}

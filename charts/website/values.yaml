@@ -1,0 +1,104 @@
+# name: ""                                    # Required to identify the resources   
+
+image: 
+  # repository: ""
+  tag: "latest"
+  pullPolicy: "IfNotPresent"
+  # command: "" or []                         # Start command (same as `entrypoint` in Docker)
+  # args: "" or []                            # Start arguments (same as `cmd` in Docker)
+
+replicas: 1                                   # Either replicas or hpa can be defined. Default is 1.
+
+hpa: false
+  # replicas:
+  #   min: 1
+  #   max: 3
+
+revisions: 3                                  # Revision history limit
+
+priority: 100                                 # Priority class value
+
+pdb:                                          # To disable, set pdb to `false`
+  minAvailable: 50%                           # Minimum number of pods that must be available during disruption
+  # maxUnavailable: 50%                       # Maximum number of pods that can be unavailable during disruption
+
+env: []
+# env:
+#   - name: "FOO"
+#     value: "bar"
+
+ports:
+  - name: "http"
+    protocol: "TCP" # default
+    port: 80
+
+# hostnames:
+#   - "example.com":
+#       paths:
+#         - path: /
+#           middlewares: []
+#   - "www.example.com"
+
+healthcheck:                                  # To disable, set healthcheck to `false` 
+  liveness:
+    type: "http"                              # Can also be "cmd" or "custom"
+    port: "http"                              # If type is http
+    path: "/"                                 # If type is http
+    cmd: "ls"                                 # If type is cmd
+    definition: {}                            # If type is custom
+    initialDelay: 30
+    period: 15
+    timeout: 3
+    failureThreshold: 3
+    successThreshold: 1
+  readiness: 
+    type: "http"                              # Can also be "cmd" or "custom"
+    port: "http"                              # If type is http
+    path: "/"                                 # If type is http
+    cmd: "ls"                                 # If type is cmd
+    definition: {}                            # If type is custom
+    initialDelay: 5
+    period: 3
+    timeout: 3
+    failureThreshold: 3
+    successThreshold: 2
+
+resources:
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+  requests:
+    cpu: "0.1"
+    memory: "256Mi"
+
+secrets:
+  environment:                                # List of secrets to mount. Secrets should be places inside the `{{ root }}/{{ .Release.Namesapce }}/{{ .Chart.Name }}` folder.
+    root: "environment/data"
+    mountPath: "/vault/secrets"
+    paths: []
+  certs: []
+
+
+serviceMesh:                                  # To disable, set serviceMesh to `false`
+  skipOutboundPorts:
+    - 3306
+    - 8200
+  skipInboundPorts: []
+
+volumes: []
+
+rollout:
+  strategy: "rolling"
+  maxSurge: 50%
+  maxUnavailable: 25%
+  canary:
+    steps:
+      - setWeight: 10
+      - pause: { duration: 30m }
+      - setWeight: 25
+      - pause: { duration: 30m }
+      - setWeight: 50
+      - pause: { duration: 1h }
+      - setWeight: 75
+      - pause: { duration: 2h }
+      - setWeight: 100

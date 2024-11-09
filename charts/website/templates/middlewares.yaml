@@ -1,0 +1,28 @@
+{{- range .Values.hostnames }}
+{{- if kindIs "map" . }}
+{{- range $hostname, $data := . }}
+{{- if and (kindIs "string" $hostname) (kindIs "map" $data) }}
+{{- range $data.paths }}
+{{- if and (hasKey . "middlewares") (gt (len .middlewares) 0) -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "name" $ }}-{{ include "slugify" $hostname }}-{{ include "slugify" (trimAll "/" .path) }}
+spec:
+  {{- range $key, $definition := .middlewares }}
+  {{- if eq $key "ipallowlist" }}
+  ipAllowList:
+    sourceRange:
+      {{- $definition.range | toYaml | nindent 6 }}
+    {{- if hasKey $definition "depth" }}
+    depth: {{ $definition.depth }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

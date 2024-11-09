@@ -1,0 +1,307 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "name": {
+            "description": "Name of the app. Will be prepended after the release name in the format <release-name>-<name> on every resource.",
+            "type": "string"
+        },
+        "image": {
+            "description": "Image to use for the app.",
+            "type": "object",
+            "properties": {
+                "repository": {
+                    "description": "Image repository.",
+                    "type": "string"
+                },
+                "tag": {
+                    "description": "Image tag.",
+                    "type": "string"
+                },
+                "pullPolicy": {
+                    "description": "Image pull policy.",
+                    "type": "string",
+                    "enum": ["Always", "IfNotPresent", "Never"]
+                },
+                "command": {
+                    "description": "Command to run in the container.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "array", "items": { "type": "string" } }
+                    ]
+                },
+                "args": {
+                    "description": "Arguments to the command.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "array", "items": { "type": "string" } }
+                    ]
+                }
+            },
+            "required": ["repository", "tag", "pullPolicy"]
+        },
+        "replicas": {
+            "description": "Number of replicas to run.",
+            "type": "integer"
+        },
+        "hpa": {
+            "description": "Horizontal Pod Autoscaler configuration.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "replicas": {
+                    "description": "Number of replicas to run.",
+                    "type": "object",
+                    "properties": {
+                        "min": {
+                            "description": "Minimum number of replicas.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "max": {
+                            "description": "Maximum number of replicas.",
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": ["min", "max"]
+                }
+            },
+            "required": ["replicas"]
+        },
+        "revisions": {
+            "description": "Number of revisions to keep.",
+            "type": "integer",
+            "minimum": 1
+        },
+        "priority": {
+            "description": "Priority class to use for the app.",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 1000000000
+        },
+        "pdb": {
+            "description": "Pod Disruption Budget configuration.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "minAvailable": {
+                    "description": "Minimum number of pods that must be available. Can be an integer or a percentage.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer", "minimum": 0 }
+                    ]
+                },
+                "maxUnavailable": {
+                    "description": "Maximum number of pods that can be unavailable. Can be an integer or a percentage.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer", "minimum": 0 }
+                    ]
+                }
+            },
+            "required": ["minAvailable"]
+        },
+        "env": {
+            "description": "Environment variables to set in the container.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the environment variable.",
+                        "type": "string"
+                    },
+                    "value": {
+                        "description": "Value of the environment variable.",
+                        "type": "string"
+                    }
+                },
+                "required": ["name", "value"]
+            }
+        },
+        "ports": {
+            "description": "Ports inside the container.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the port.",
+                        "type": "string"
+                    },
+                    "port": {
+                        "description": "Port number.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535
+                    },
+                    "protocol": {
+                        "description": "Protocol of the port.",
+                        "type": "string",
+                        "enum": ["TCP", "UDP"]
+                    }
+                },
+                "required": ["name", "port"]
+            }
+        },
+        "hostnames": {
+            "description": "Hostnames to use for the app.",
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    { "type": "string" },
+                    { "type": "object", "properties": {
+                                            "paths": {
+                                                "description": "Paths defined in the application.",
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "path": {
+                                                            "description": "Path. Must start with `/`.",
+                                                            "type": "string",
+                                                            "pattern": "^/.*$"
+                                                        },
+                                                        "type": {
+                                                            "description": "Type of the path.",
+                                                            "type": "string",
+                                                            "enum": ["exact", "prefix", "regex"]
+                                                        },
+                                                        "port": {
+                                                            "description": "Port to use for the path.",
+                                                            "type": "string"
+                                                        },
+                                                        "scheme": {
+                                                            "description": "Scheme to use for the path.",
+                                                            "type": "string",
+                                                            "enum": ["http", "https", "h2c"]
+                                                        },
+                                                        "serviceMesh": {
+                                                            "description": "Enable or disable service mesh for this route.",
+                                                            "type": "boolean"
+                                                        },
+                                                        "middlewares": {
+                                                            "description": "Middlewares to use for the path.",
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "required": ["path", "type", "port", "scheme"]
+                                                }
+                                            }
+                                        }
+                    }
+                ]
+            }
+        },
+        "healthcheck": {
+
+        },
+        "resources": {
+            "description": "Resource limits and requests for the container.",
+            "type": "object",
+            "properties": {
+                "limits": {
+                    "description": "Resource limits for the container.",
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "description": "CPU limit.",
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "integer", "minimum": 0 }
+                            ]
+                        },
+                        "memory": {
+                            "description": "Memory limit.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["cpu", "memory"]
+                },
+                "requests": {
+                    "description": "Resource requests for the container.",
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "description": "CPU request.",
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "integer", "minimum": 0 }
+                            ]
+                        },
+                        "memory": {
+                            "description": "Memory request.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["cpu", "memory"]
+                }
+            },
+            "required": ["limits", "requests"]
+        },
+        "secrets": {
+
+        },
+        "serviceMesh": {
+
+        },
+        "volumes": {
+            "description": "Volumes to mount in the container.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the volume.",
+                        "type": "string"
+                    },
+                    "target": {
+                        "description": "Absolute path to mount the volume.",
+                        "type": "string"
+                    },
+                    "size": {
+                        "description": "Size of the volume.",
+                        "type": "string"
+                    },
+                    "storageClass": {
+                        "description": "Storage class of the volume.",
+                        "type": "string"
+                    },
+                    "accessModes": {
+                        "description": "Access modes of the volume.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"]
+                        }
+                    },
+                    "volumeMode": {
+                        "description": "Volume mode of the volume.",
+                        "type": "string",
+                        "enum": ["Filesystem", "Block"]
+                    }
+                },
+                "required": ["name", "target", "size"]
+            }
+        },
+        "rollout": {
+            "description": "Rollout configuration.",
+            "type": "object",
+            "properties": {
+                "strategy": {
+                    "description": "Rollout strategy.",
+                    "type": "string",
+                    "enum": ["recreate", "rolling", "canary"]
+                },
+                "maxSurge": {
+                    "description": "Maximum number of pods that can be created above the desired number of pods.",
+                    "type": "string"
+                },
+                "maxUnavailable": {
+                    "description": "Maximum number of pods that can be unavailable during the update.",
+                    "type": "string"
+                }
+            },
+            "required": ["strategy"]
+        }
+    },
+    "required": ["name", "image", "replicas", "hpa", "revisions", "priority", "env", "ports", "hostnames", "healthcheck", "resources", "secrets", "serviceMesh", "volumes", "rollout"]
+}

@@ -1,0 +1,29 @@
+{{- define "name" -}}
+{{- printf "%s-%s" .Chart.Name .Values.name -}}
+{{- end }}
+
+{{- define "slugify" -}}
+{{- . | replace "/" "-" | replace "." "-" | lower -}}
+{{- end }}
+
+{{- define "hostnames.list" }}
+{{- range . }}
+{{- if kindIs "string" . }}
+- {{ . }}
+{{- else }}
+{{- range $k, $v := . -}}
+- {{ $k }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- define "command" }}
+{{- if kindIs "list" . }}
+{{ . }}
+{{- else }}
+{{- if kindIs "string" . }}
+{{- . | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

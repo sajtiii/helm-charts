@@ -1,0 +1,15 @@
+{{- range .Values.volumes -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "name" $ }}
+spec:
+  accessModes: {{ .accessModes | default "ReadWriteMany" }}
+  volumeMode: {{ .filesystem | default "Filesystem" }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  storageClassName: {{ .storageClass | default "default" }}
+---
+
+{{- end }}

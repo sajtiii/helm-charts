@@ -1,0 +1,21 @@
+{{- with .Values.rollout }}
+{{- if eq .strategy "canary" -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "name" $ }}
+spec:
+  strategy:
+    canary:
+      stableService: {{ include "name" $ }}
+      canaryService: {{ include "name" $ }}-canary
+      maxSurge: {{ .maxSurge }}
+      maxUnavailable: {{ .maxUnavailable }}
+      trafficRouting:
+        traefik:
+          weightedTraefikServiceName: {{ include "name" $ }}
+      steps:
+        {{- .canary.steps | toYaml | nindent 8 }}
+  {{- include "deployment.template" $ | nindent 2 }}
+{{- end }}
+{{- end }}

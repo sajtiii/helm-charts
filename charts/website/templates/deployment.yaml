@@ -1,0 +1,20 @@
+{{- if or (eq .Values.rollout.strategy "rolling") (eq .Values.rollout.strategy "recreate") }}
+{{- $secretPath := printf "kubernetes/%s/%s" .Release.Namespace ((.secret).path | default .name) }}
+{{- $secretPaths := ((.secret).paths | default (list ((.secret).path | default .name))) }}
+{{- $secretIndex := 0 }}
+{{- $secretMountPath := printf "kubernetes/%s/%s" .Release.Namespace ((.secret).mountPath | default $secretPath) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "name" $ }}
+spec:
+  strategy:
+    {{- $rolloutStrategy := eq .Values.rollout.strategy "recreate" | ternary "Recreate" "RollingUpdate" }}
+    type: {{ $rolloutStrategy }}
+    {{- if eq $rolloutStrategy "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.rollout.maxSurge }}
+      maxUnavailable: {{ .Values.rollout.maxUnavailable }}
+    {{- end }}
+  {{- include "deployment.template" $ | nindent 2 }}
+{{- end }}

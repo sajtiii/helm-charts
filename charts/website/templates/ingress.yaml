@@ -1,0 +1,68 @@
+{{- if gt (len .Values.hostnames) 0 }}
+{{- if gt (len .Values.ports) 0 -}}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "name" $ }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    {{- range .Values.hostnames }}
+    {{- if kindIs "string" . -}}
+    {{- include "ingress.host" (dict "name" (include "name" $) "hostname" . "path" "/" "mesh" (kindIs "map" $.Values.serviceMesh) "rolloutStrategy" $.Values.rollout.strategy) | nindent 4 }}
+    {{- else }}
+    {{- range $k, $v := . }}
+    {{- range $v.paths}}
+    {{- include "ingress.host" (merge . (dict "name" (include "name" $) "hostname" $k "mesh" (and (.serviceMesh | default true) (kindIs "map" $.Values.serviceMesh)) "rolloutStrategy" $.Values.rollout.strategy)) | nindent 4 }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+  tls:
+    secretName: {{ include "name" $ }}-tls
+{{- end }}
+{{- end }}
+
+
+
+{{- define "ingress.host" }}
+{{- $type := .type | default "prefix" }}
+{{- $pathRule := "Path" }}
+{{- $middlewares := list -}}
+
+{{- if eq $type "prefix" }}
+{{- $pathRule = "PathPrefix" }}
+{{- end }}
+{{- if eq $type "regex" }}
+{{- $pathRule = "PathRegexp" }}
+{{- end -}}
+
+
+{{- if and (kindIs "map" .middlewares) (gt (len .middlewares) 0) }}
+{{- $middlewares = append $middlewares (dict "name" (printf "%s-%s-%s" .name (include "slugify" .hostname) (include "slugify" (trimAll "/" .path)))) }}
+{{- end }}
+{{- if eq .mesh true }}
+{{- $middlewares = append $middlewares (dict "name" (printf "%s-%s-l5d-header" .name (.port | default "http"))) }}
+{{- end -}}
+- kind: Rule
+  match: Host(`{{ .hostname }}`) && {{ $pathRule }}(`{{ .path }}`)
+  {{- if gt (len $middlewares) 0 }}
+  middlewares:
+    {{- range $middlewares }}
+    - name: {{ .name }}
+      {{- if kindIs "string" .namespace }}
+      namespace: {{ .namespace}}
+      {{- end}}
+    {{- end }}
+  {{- end }}
+  services:
+    {{- if eq $.rolloutStrategy "canary" }}
+    - kind: TraefikService
+    {{- else }}
+    - kind: Service
+    {{- end }}
+      name: {{ .name }}
+      port: {{ .port | default "http" }}
+      scheme: {{ .scheme | default "http" }}
+{{- end }}
