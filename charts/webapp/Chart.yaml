@@ -1,6 +1,3 @@
-# Developed by Attila Nagy (nagyattila949@gmail.com)
-# Last modified: 2024-10-27
-# Do not redistribute without permission
 apiVersion: v2
 name: webapp
 description: Helm chart to use across common web apps
