@@ -1,6 +1,6 @@
-# name: ""                                    # Required to identify the resources   
+# name: ""                                    # Required to identify the resources
 
-image: 
+image:
   # repository: ""
   tag: "latest"
   pullPolicy: "IfNotPresent"
@@ -29,7 +29,7 @@ env: []
 
 ports:
   - name: "http"
-    protocol: "TCP" # default
+    protocol: "TCP"                           # default is `TCP`
     port: 80
 
 # hostnames:
@@ -39,7 +39,7 @@ ports:
 #           middlewares: []
 #   - "www.example.com"
 
-healthcheck:                                  # To disable, set healthcheck to `false` 
+healthcheck:                                  # To disable, set healthcheck to `false`
   liveness:
     type: "http"                              # Can also be "cmd" or "custom"
     port: "http"                              # If type is http
@@ -51,7 +51,7 @@ healthcheck:                                  # To disable, set healthcheck to `
     timeout: 3
     failureThreshold: 3
     successThreshold: 1
-  readiness: 
+  readiness:
     type: "http"                              # Can also be "cmd" or "custom"
     port: "http"                              # If type is http
     path: "/"                                 # If type is http
@@ -94,11 +94,15 @@ rollout:
   canary:
     steps:
       - setWeight: 10
-      - pause: { duration: 30m }
+      - pause:
+          duration: 30m
       - setWeight: 25
-      - pause: { duration: 30m }
+      - pause:
+          duration: 30m
       - setWeight: 50
-      - pause: { duration: 1h }
+      - pause:
+          duration: 1h
       - setWeight: 75
-      - pause: { duration: 2h }
+      - pause:
+          duration: 2h
       - setWeight: 100
