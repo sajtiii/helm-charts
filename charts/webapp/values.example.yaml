@@ -1,0 +1,10 @@
+# This file contains the simplest application configuration that can be used to deploy an application.
+
+webapp:
+  name: "app"
+
+  image: 
+    repository: "containous/whoami"
+    
+  hostnames:
+    - whoami.example.com
