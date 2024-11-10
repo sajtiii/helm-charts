@@ -3,3 +3,4 @@ name: webapp
 description: Helm chart to use across common web apps
 type: application
 version: 0.1.0
+icon: https://charts.sajtiii.hu/webapp/icon.png
