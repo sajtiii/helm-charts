@@ -1,0 +1,86 @@
+suite: canary rollout
+templates:
+  - templates/rollout-canary.yaml
+tests:
+  - it: should not render when strategy is rolling
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render when strategy is bluegreen
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Rollout when strategy is canary
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - isKind:
+          of: Rollout
+      - isAPIVersion:
+          of: argoproj.io/v1alpha1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+
+  - it: should configure stable and canary services
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - equal:
+          path: spec.strategy.canary.stableService
+          value: web-app-myapp
+      - equal:
+          path: spec.strategy.canary.canaryService
+          value: web-app-myapp-canary
+
+  - it: should reference the weighted TraefikService
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - equal:
+          path: spec.strategy.canary.trafficRouting.traefik.weightedTraefikServiceName
+          value: web-app-myapp
+
+  - it: should include canary steps
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - isNotNull:
+          path: spec.strategy.canary.steps
+
+  - it: should reference the analysis template
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - equal:
+          path: spec.strategy.canary.analysis.templates[0].templateName
+          value: web-app-myapp-success-rate
+
+  - it: should include autoUpdate annotations when enabled
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+      image.autoUpdate: true
+    asserts:
+      - isNotNull:
+          path: metadata.annotations

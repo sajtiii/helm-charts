@@ -49,6 +49,10 @@ template:
       {{- end }}
       {{- end }}
   spec:
+    {{- if kindIs "map" .podSecurityContext }}
+    securityContext:
+      {{- toYaml .podSecurityContext | nindent 6 }}
+    {{- end }}
     serviceAccountName: {{ $.Release.Namespace }}-account
     priorityClassName: {{ $name }}
     containers:
@@ -104,8 +108,8 @@ template:
           {{- end }}
         {{- if kindIs "map" .securityContext }}
         securityContext:
-          {{ toYaml .securityContext | nindent 10 }}
-        {{- end}} 
+          {{- toYaml .securityContext | nindent 10 }}
+        {{- end }}
 
     volumes:
       {{- if (.secret).mounts }}

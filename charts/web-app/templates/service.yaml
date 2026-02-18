@@ -36,4 +36,8 @@ spec:
         port: {{ .name }}
       {{- end }}
 {{- end }}
+{{- if eq .Values.rollout.strategy "bluegreen" }}
+---
+{{- include "service.template" (dict "name" (printf "%s-preview" (include "name" $)) "appName" (include "name" $) "ports" .Values.ports) }}
+{{- end }}
 {{- end }}

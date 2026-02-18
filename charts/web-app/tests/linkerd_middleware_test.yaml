@@ -1,0 +1,47 @@
+suite: linkerd middleware
+templates:
+  - templates/linkerd-middleware.yaml
+tests:
+  - it: should not render when serviceMesh is false
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Middleware when serviceMesh is enabled
+    set:
+      name: myapp
+      image.repository: nginx
+      serviceMesh:
+        skipOutboundPorts: []
+    asserts:
+      - isKind:
+          of: Middleware
+      - isAPIVersion:
+          of: traefik.io/v1alpha1
+
+  - it: should name middleware using port name
+    set:
+      name: myapp
+      image.repository: nginx
+      serviceMesh:
+        skipOutboundPorts: []
+    asserts:
+      - equal:
+          path: metadata.name
+          value: web-app-myapp-http-l5d-header
+
+  - it: should set l5d-dst-override header
+    set:
+      name: myapp
+      image.repository: nginx
+      serviceMesh:
+        skipOutboundPorts: []
+    release:
+      namespace: test-ns
+    asserts:
+      - equal:
+          path: spec.headers.customRequestHeaders["l5d-dst-override"]
+          value: "web-app-myapp.test-ns.svc.cluster.local:80"

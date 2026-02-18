@@ -1,0 +1,75 @@
+suite: certificate
+templates:
+  - templates/cert.yaml
+tests:
+  - it: should not render when hostnames is empty
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Certificate when hostnames are configured
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp"
+    asserts:
+      - isKind:
+          of: Certificate
+      - isAPIVersion:
+          of: cert-manager.io/v1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+
+  - it: should set TLS secret name
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp"
+    asserts:
+      - equal:
+          path: spec.secretName
+          value: web-app-myapp-tls
+
+  - it: should include string hostname in dnsNames
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp"
+    asserts:
+      - contains:
+          path: spec.dnsNames
+          content: myapp
+
+  - it: should include map hostname in dnsNames
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp":
+            paths:
+              - path: /
+    asserts:
+      - contains:
+          path: spec.dnsNames
+          content: myapp
+
+  - it: should use letsencrypt ClusterIssuer
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp"
+    asserts:
+      - equal:
+          path: spec.issuerRef.name
+          value: letsencrypt
+      - equal:
+          path: spec.issuerRef.kind
+          value: ClusterIssuer

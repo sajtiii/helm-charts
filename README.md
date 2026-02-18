@@ -1,24 +1,49 @@
 # Helm Charts
 
-Some simple helm chart I am experimenting with.
+A collection of Helm charts for deploying web applications to Kubernetes.
+
+## Charts
+
+| Chart | Description |
+|-------|-------------|
+| [web-app](charts/web-app/) | General-purpose chart for deploying web applications with support for advanced deployment strategies, service mesh, secrets management, and autoscaling |
 
 ## Usage
 
-[Helm](https://helm.sh) must be installed to use the charts.  Please refer to
-Helm's [documentation](https://helm.sh/docs) to get started.
+[Helm](https://helm.sh) must be installed to use the charts. Please refer to Helm's [documentation](https://helm.sh/docs) to get started.
 
-Once Helm has been set up correctly, add the repo as follows:
+Add the repository:
 
-  helm repo add sajtiii/helm-charts https://sajtiii.github.io/helm-charts
+```sh
+helm repo add sajtiii https://sajtiii.github.io/helm-charts
+helm repo update
+```
 
-If you had already added this repo earlier, run `helm repo update` to retrieve
-the latest versions of the packages.  You can then run `helm search repo
-sajtiii/helm-charts` to see the charts.
+Search available charts:
 
-To install the <chart-name> chart:
+```sh
+helm search repo sajtiii
+```
 
-    helm install my-<chart-name> sajtiii/helm-charts/<chart-name>
+Install a chart:
 
-To uninstall the chart:
+```sh
+helm install my-app sajtiii/web-app -f my-values.yaml
+```
 
-    helm delete my-<chart-name>
+Upgrade a release:
+
+```sh
+helm upgrade my-app sajtiii/web-app -f my-values.yaml
+```
+
+Uninstall a release:
+
+```sh
+helm uninstall my-app
+```
+
+## Development
+
+Charts are linted and tested automatically on pull requests using [chart-testing](https://github.com/helm/chart-testing).
+Releases are published automatically on merge to `main` using [chart-releaser](https://github.com/helm/chart-releaser).

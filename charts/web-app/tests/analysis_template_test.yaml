@@ -1,0 +1,75 @@
+suite: analysis template
+templates:
+  - templates/analysis-template.yaml
+tests:
+  - it: should not render when strategy is rolling
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render when strategy is bluegreen
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render AnalysisTemplate when strategy is canary
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - isKind:
+          of: AnalysisTemplate
+      - isAPIVersion:
+          of: argoproj.io/v1alpha1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp-success-rate
+
+  - it: should configure prometheus success-rate metric
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - equal:
+          path: spec.metrics[0].name
+          value: success-rate
+      - equal:
+          path: spec.metrics[0].interval
+          value: 30m
+      - equal:
+          path: spec.metrics[0].failureLimit
+          value: 3
+
+  - it: should set prometheus address
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - equal:
+          path: spec.metrics[0].provider.prometheus.address
+          value: "http://prometheus-server.monitoring.svc.cluster.local"
+
+  - it: should use custom analysis configuration
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+      rollout.canary.analysis.interval: 5m
+      rollout.canary.analysis.failureLimit: 5
+    asserts:
+      - equal:
+          path: spec.metrics[0].interval
+          value: 5m
+      - equal:
+          path: spec.metrics[0].failureLimit
+          value: 5

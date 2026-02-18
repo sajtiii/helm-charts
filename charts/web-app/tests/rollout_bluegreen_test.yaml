@@ -1,0 +1,87 @@
+suite: bluegreen rollout
+templates:
+  - templates/rollout-bluegreen.yaml
+tests:
+  - it: should not render when strategy is rolling
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render when strategy is canary
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Rollout when strategy is bluegreen
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - isKind:
+          of: Rollout
+      - isAPIVersion:
+          of: argoproj.io/v1alpha1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+
+  - it: should configure active and preview services
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - equal:
+          path: spec.strategy.blueGreen.activeService
+          value: web-app-myapp
+      - equal:
+          path: spec.strategy.blueGreen.previewService
+          value: web-app-myapp-preview
+
+  - it: should set autoPromotionEnabled to false by default
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - equal:
+          path: spec.strategy.blueGreen.autoPromotionEnabled
+          value: false
+
+  - it: should set scaleDownDelaySeconds
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - equal:
+          path: spec.strategy.blueGreen.scaleDownDelaySeconds
+          value: 30
+
+  - it: should set previewReplicaCount
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - equal:
+          path: spec.strategy.blueGreen.previewReplicaCount
+          value: 1
+
+  - it: should include autoUpdate annotations when enabled
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+      image.autoUpdate: true
+    asserts:
+      - isNotNull:
+          path: metadata.annotations

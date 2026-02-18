@@ -4,6 +4,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
   name: {{ include "name" $ }}
+  {{- if $.Values.image.autoUpdate }}
+  annotations:
+    {{- include "image.autoUpdate.annotations" $ | nindent 4 }}
+  {{- end }}
 spec:
   strategy:
     canary:
@@ -14,6 +18,12 @@ spec:
       trafficRouting:
         traefik:
           weightedTraefikServiceName: {{ include "name" $ }}
+      analysis:
+        templates:
+          - templateName: {{ include "name" $ }}-success-rate
+        args:
+          - name: target
+            value: {{ include "name" $ }}
       steps:
         {{- .canary.steps | toYaml | nindent 8 }}
   {{- include "deployment.template" $ | nindent 2 }}
