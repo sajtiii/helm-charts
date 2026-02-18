@@ -74,6 +74,7 @@ ports:
 # -- Ingress hostname and routing configuration.
 # Each entry can be a bare hostname string (routes all traffic to the default "http" port)
 # or a hostname map with detailed per-path routing rules.
+hostnames: []
 # hostnames:
 #   - "example.com":
 #       paths:
