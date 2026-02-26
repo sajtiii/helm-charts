@@ -232,14 +232,23 @@ tests:
           path: spec.template.metadata.annotations["linkerd.io/inject"]
           value: "enabled"
 
-  - it: should use default service account name convention
+  - it: should use default service account name convention when serviceAccount is an empty map
     set:
       name: myapp
       image.repository: nginx
+      serviceAccount: {}
     asserts:
       - matchRegex:
           path: spec.template.spec.serviceAccountName
           pattern: ^.+-account$
+
+  - it: should omit serviceAccountName by default
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.serviceAccountName
 
   - it: should use custom service account name when set
     set:
