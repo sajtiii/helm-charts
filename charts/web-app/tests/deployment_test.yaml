@@ -451,10 +451,11 @@ tests:
           path: spec.template.spec.containers[0].lifecycle.preStop.exec.command
           value: ["/bin/sh", "-c", "sleep 5"]
 
-  - it: should not render lifecycle when empty
+  - it: should render default preStop lifecycle when not overridden
     set:
       name: myapp
       image.repository: nginx
     asserts:
-      - isNull:
-          path: spec.template.spec.containers[0].lifecycle
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command
+          value: ["/bin/sh", "-c", "sleep 10"]
