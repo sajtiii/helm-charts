@@ -5,10 +5,8 @@ metadata:
   name: {{ include "name" $ }}-volume-{{ .name }}
 spec:
   accessModes:
-    {{- (.accessModes | default (list "ReadWriteMany")) | toYaml | nindent 4 }}
-  {{- if .volumeMode }}
-  volumeMode: {{ .volumeMode }}
-  {{- end }}
+    {{- (.accessModes | default (list "ReadWriteOnce")) | toYaml | nindent 4 }}
+  volumeMode: {{ .volumeMode | default "Filesystem" }}
   resources:
     requests:
       storage: {{ .size }}
