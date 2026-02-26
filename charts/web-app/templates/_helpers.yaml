@@ -1,5 +1,5 @@
 {{- define "name" -}}
-{{- printf "%s-%s" .Chart.Name (.Values.name | default .Release.Name) -}}
+{{- .Values.name | default .Release.Name -}}
 {{- end }}
 
 {{- define "slugify" -}}
