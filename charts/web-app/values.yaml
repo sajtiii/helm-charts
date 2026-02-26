@@ -84,7 +84,7 @@ env: []
 ports:
   - name: "http"
     protocol: "TCP"                           # Transport protocol: TCP (default) or UDP
-    port: 80
+    port: 8080
 
 # -- Ingress hostname and routing configuration.
 # Each entry can be a bare hostname string (routes all traffic to the default "http" port)
