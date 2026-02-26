@@ -1,5 +1,5 @@
 {{- define "name" -}}
-{{- .Values.name | default .Release.Name -}}
+{{- include "slugify" (.Values.name | default .Release.Name) -}}
 {{- end }}
 
 {{- define "slugify" -}}
