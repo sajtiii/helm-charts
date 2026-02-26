@@ -1,0 +1,55 @@
+{{- define "name" -}}
+{{- printf "%s-%s" .Chart.Name .Values.name -}}
+{{- end }}
+
+{{- define "slugify" -}}
+{{- . | replace "/" "-" | replace "." "-" | lower -}}
+{{- end }}
+
+{{- define "hostnames.list" }}
+{{- range . }}
+{{- if kindIs "string" . }}
+- {{ . }}
+{{- else }}
+{{- range $k, $v := . -}}
+- {{ $k }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- define "command" -}}
+{{- if kindIs "slice" . -}}{{ toJson . }}
+{{- else if kindIs "string" . -}}{{ toJson (list .) }}
+{{- end -}}
+{{- end }}
+
+{{- define "image.autoUpdate.annotations" }}
+{{- if .Values.image.autoUpdate }}
+{{- $alias := "app" }}
+{{- $config := kindIs "map" .Values.image.autoUpdate | ternary .Values.image.autoUpdate dict }}
+{{- $strategy := $config.strategy | default "digest" }}
+argocd-image-updater.argoproj.io/image-list: {{ printf "%s=%s" $alias .Values.image.repository | quote }}
+argocd-image-updater.argoproj.io/{{ $alias }}.update-strategy: {{ $strategy | quote }}
+argocd-image-updater.argoproj.io/{{ $alias }}.helm.image-name: "image.repository"
+argocd-image-updater.argoproj.io/{{ $alias }}.helm.image-tag: "image.tag"
+{{- if $config.allowTags }}
+argocd-image-updater.argoproj.io/{{ $alias }}.allow-tags: {{ $config.allowTags | quote }}
+{{- end }}
+{{- if $config.ignoreTags }}
+argocd-image-updater.argoproj.io/{{ $alias }}.ignore-tags: {{ $config.ignoreTags | quote }}
+{{- end }}
+{{- if $config.pullSecret }}
+argocd-image-updater.argoproj.io/{{ $alias }}.pull-secret: {{ $config.pullSecret | quote }}
+{{- end }}
+{{- if $config.writeBack }}
+argocd-image-updater.argoproj.io/write-back-method: {{ $config.writeBack | quote }}
+{{- end }}
+{{- if $config.gitRepository }}
+argocd-image-updater.argoproj.io/git-repository: {{ $config.gitRepository | quote }}
+{{- end }}
+{{- if $config.gitBranch }}
+argocd-image-updater.argoproj.io/git-branch: {{ $config.gitBranch | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

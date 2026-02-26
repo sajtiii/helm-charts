@@ -1,0 +1,808 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "name": {
+            "description": "Name of the app. Will be prepended after the release name in the format <release-name>-<name> on every resource.",
+            "type": "string"
+        },
+        "image": {
+            "description": "Image to use for the app.",
+            "type": "object",
+            "properties": {
+                "repository": {
+                    "description": "Image repository.",
+                    "type": "string"
+                },
+                "tag": {
+                    "description": "Image tag.",
+                    "type": "string"
+                },
+                "pullPolicy": {
+                    "description": "Image pull policy.",
+                    "type": "string",
+                    "enum": ["Always", "IfNotPresent", "Never"]
+                },
+                "command": {
+                    "description": "Command to run in the container (overrides image entrypoint).",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "array", "items": { "type": "string" } }
+                    ]
+                },
+                "args": {
+                    "description": "Arguments to the command (overrides image cmd).",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "array", "items": { "type": "string" } }
+                    ]
+                },
+                "pullSecrets": {
+                    "description": "Image pull secrets for authenticating against private container registries.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": { "description": "Name of the Kubernetes Secret containing registry credentials.", "type": "string" }
+                        },
+                        "required": ["name"]
+                    }
+                },
+                "autoUpdate": {
+                    "description": "ArgoCD Image Updater integration. Set to `false` to disable.",
+                    "type": ["object", "boolean"],
+                    "properties": {
+                        "strategy": {
+                            "description": "Image update strategy.",
+                            "type": "string",
+                            "enum": ["semver", "latest", "digest", "name"]
+                        },
+                        "allowTags": {
+                            "description": "Tag filter expression (e.g. `regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$`).",
+                            "type": "string"
+                        },
+                        "ignoreTags": {
+                            "description": "Comma-separated tags to ignore (e.g. `latest,dev`).",
+                            "type": "string"
+                        },
+                        "pullSecret": {
+                            "description": "Pull secret reference (e.g. `pullsecret:namespace/secret-name`).",
+                            "type": "string"
+                        },
+                        "writeBack": {
+                            "description": "How ArgoCD Image Updater writes back the new image: `argocd` (default) updates Application parameters in-cluster, `git` commits the change to the source repo.",
+                            "type": "string",
+                            "enum": ["argocd", "git"]
+                        },
+                        "gitRepository": {
+                            "description": "Git repository URL for git write-back. Required when writeBack is `git`.",
+                            "type": "string"
+                        },
+                        "gitBranch": {
+                            "description": "Git branch for git write-back. Required when writeBack is `git`.",
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "required": ["repository", "tag", "pullPolicy"]
+        },
+        "replicas": {
+            "description": "Number of replicas to run.",
+            "type": "integer"
+        },
+        "autoscaling": {
+            "description": "Horizontal Pod Autoscaler configuration. Set to `false` to disable.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "replicas": {
+                    "description": "Replica count bounds for the HPA.",
+                    "type": "object",
+                    "properties": {
+                        "min": {
+                            "description": "Minimum number of replicas.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "max": {
+                            "description": "Maximum number of replicas.",
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": ["min", "max"]
+                },
+                "cpuTarget": {
+                    "description": "Target average CPU utilization percentage to trigger scaling.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "memoryTarget": {
+                    "description": "Target average memory utilization percentage to trigger scaling.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "behavior": {
+                    "description": "HPA scaling behavior. Controls scale-up and scale-down rates to prevent flapping.",
+                    "type": "object"
+                }
+            },
+            "required": ["replicas"]
+        },
+        "revisions": {
+            "description": "Number of revisions to keep.",
+            "type": "integer",
+            "minimum": 1
+        },
+        "serviceAccount": {
+            "description": "Service account configuration for pods. Set to `false` to omit serviceAccountName from the pod spec.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "name": {
+                    "description": "Service account name. Defaults to `<namespace>-account` when empty.",
+                    "type": "string"
+                }
+            }
+        },
+        "priority": {
+            "description": "Priority class value for the app.",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 1000000000
+        },
+        "pdb": {
+            "description": "Pod Disruption Budget configuration. Set to `false` to disable.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "minAvailable": {
+                    "description": "Minimum number of pods that must be available. Can be an integer or a percentage.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer", "minimum": 0 }
+                    ]
+                },
+                "maxUnavailable": {
+                    "description": "Maximum number of pods that can be unavailable. Can be an integer or a percentage.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer", "minimum": 0 }
+                    ]
+                }
+            },
+            "required": ["minAvailable"]
+        },
+        "env": {
+            "description": "Environment variables to set in the container.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the environment variable.",
+                        "type": "string"
+                    },
+                    "value": {
+                        "description": "Value of the environment variable.",
+                        "type": "string"
+                    }
+                },
+                "required": ["name", "value"]
+            }
+        },
+        "ports": {
+            "description": "Ports exposed by the container.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the port.",
+                        "type": "string"
+                    },
+                    "port": {
+                        "description": "Port number.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535
+                    },
+                    "protocol": {
+                        "description": "Protocol of the port.",
+                        "type": "string",
+                        "enum": ["TCP", "UDP"]
+                    }
+                },
+                "required": ["name", "port"]
+            }
+        },
+        "hostnames": {
+            "description": "Hostnames to expose via IngressRoute. Each entry is either a bare hostname string or an object mapping a hostname to its path configuration.",
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    { "type": "string" },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "paths": {
+                                "description": "Path-based routing rules for this hostname.",
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "description": "Path to match. Must start with `/`.",
+                                            "type": "string",
+                                            "pattern": "^/.*$"
+                                        },
+                                        "type": {
+                                            "description": "Matching type. Defaults to `prefix`.",
+                                            "type": "string",
+                                            "enum": ["exact", "prefix", "regex"]
+                                        },
+                                        "port": {
+                                            "description": "Named port to route traffic to. Defaults to `http`.",
+                                            "type": "string"
+                                        },
+                                        "scheme": {
+                                            "description": "Backend scheme. Defaults to `http`.",
+                                            "type": "string",
+                                            "enum": ["http", "https", "h2c"]
+                                        },
+                                        "serviceMesh": {
+                                            "description": "Override service mesh header injection for this route.",
+                                            "type": "boolean"
+                                        },
+                                        "middlewares": {
+                                            "description": "Traefik middlewares for this path. Supported keys: `ipallowlist`.",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "required": ["path"]
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "healthcheck": {
+            "description": "Liveness and readiness probe configuration. Set to `false` to disable.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "liveness": {
+                    "description": "Liveness probe. Restarts the container when it fails.",
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "Probe type: `http`, `cmd`, or `custom`.",
+                            "type": "string",
+                            "enum": ["http", "cmd", "custom"]
+                        },
+                        "port": {
+                            "description": "Named port for HTTP probes.",
+                            "type": "string"
+                        },
+                        "path": {
+                            "description": "HTTP path for HTTP probes.",
+                            "type": "string"
+                        },
+                        "cmd": {
+                            "description": "Command to run for exec probes.",
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "array", "items": { "type": "string" } }
+                            ]
+                        },
+                        "definition": {
+                            "description": "Raw probe definition for custom type.",
+                            "type": "object"
+                        },
+                        "initialDelay": {
+                            "description": "Seconds after container start before probes begin.",
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "period": {
+                            "description": "How often (in seconds) to run the probe.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "timeout": {
+                            "description": "Seconds before the probe times out.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "failureThreshold": {
+                            "description": "Consecutive failures before the pod is restarted.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "successThreshold": {
+                            "description": "Consecutive successes before the probe is considered healthy.",
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": ["type", "initialDelay", "period", "timeout"]
+                },
+                "readiness": {
+                    "description": "Readiness probe. Removes the pod from service endpoints when it fails.",
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "Probe type: `http`, `cmd`, or `custom`.",
+                            "type": "string",
+                            "enum": ["http", "cmd", "custom"]
+                        },
+                        "port": {
+                            "description": "Named port for HTTP probes.",
+                            "type": "string"
+                        },
+                        "path": {
+                            "description": "HTTP path for HTTP probes.",
+                            "type": "string"
+                        },
+                        "cmd": {
+                            "description": "Command to run for exec probes.",
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "array", "items": { "type": "string" } }
+                            ]
+                        },
+                        "definition": {
+                            "description": "Raw probe definition for custom type.",
+                            "type": "object"
+                        },
+                        "initialDelay": {
+                            "description": "Seconds after container start before probes begin.",
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "period": {
+                            "description": "How often (in seconds) to run the probe.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "timeout": {
+                            "description": "Seconds before the probe times out.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "failureThreshold": {
+                            "description": "Consecutive failures before the pod is removed from endpoints.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "successThreshold": {
+                            "description": "Consecutive successes before the pod is added back to endpoints.",
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": ["type", "initialDelay", "period", "timeout"]
+                },
+                "startup": {
+                    "description": "Startup probe. Delays liveness and readiness checks until this probe passes. Omit to disable.",
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "Probe type: `http`, `cmd`, or `custom`.",
+                            "type": "string",
+                            "enum": ["http", "cmd", "custom"]
+                        },
+                        "port": {
+                            "description": "Named port for HTTP probes.",
+                            "type": "string"
+                        },
+                        "path": {
+                            "description": "HTTP path for HTTP probes.",
+                            "type": "string"
+                        },
+                        "cmd": {
+                            "description": "Command to run for exec probes.",
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "array", "items": { "type": "string" } }
+                            ]
+                        },
+                        "definition": {
+                            "description": "Raw probe definition for custom type.",
+                            "type": "object"
+                        },
+                        "initialDelay": {
+                            "description": "Seconds after container start before probes begin.",
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "period": {
+                            "description": "How often (in seconds) to run the probe.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "timeout": {
+                            "description": "Seconds before the probe times out.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "failureThreshold": {
+                            "description": "Consecutive failures allowed before the container is considered failed to start.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "successThreshold": {
+                            "description": "Consecutive successes required for the startup to be considered complete.",
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": ["type", "initialDelay", "period", "timeout"]
+                }
+            },
+            "required": ["liveness", "readiness"]
+        },
+        "resources": {
+            "description": "Resource limits and requests for the container.",
+            "type": "object",
+            "properties": {
+                "limits": {
+                    "description": "Resource limits for the container.",
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "description": "CPU limit.",
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "integer", "minimum": 0 }
+                            ]
+                        },
+                        "memory": {
+                            "description": "Memory limit.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["cpu", "memory"]
+                },
+                "requests": {
+                    "description": "Resource requests for the container.",
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "description": "CPU request.",
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "integer", "minimum": 0 }
+                            ]
+                        },
+                        "memory": {
+                            "description": "Memory request.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["cpu", "memory"]
+                }
+            },
+            "required": ["limits", "requests"]
+        },
+        "podSecurityContext": {
+            "description": "Pod-level security context. Set to `false` to disable.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "runAsNonRoot": {
+                    "description": "Requires the container to run as a non-root user.",
+                    "type": "boolean"
+                },
+                "runAsUser": {
+                    "description": "UID to run the container process as.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "runAsGroup": {
+                    "description": "GID to run the container process as.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "fsGroup": {
+                    "description": "GID that owns the pod's volumes. Files created in volumes will be owned by this GID.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "seccompProfile": {
+                    "description": "Seccomp profile to apply to the pod.",
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "Type of seccomp profile.",
+                            "type": "string",
+                            "enum": ["RuntimeDefault", "Localhost", "Unconfined"]
+                        },
+                        "localhostProfile": {
+                            "description": "Path to a local seccomp profile. Required when type is Localhost.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["type"]
+                }
+            }
+        },
+        "securityContext": {
+            "description": "Container-level security context. Set to `false` to disable.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "allowPrivilegeEscalation": {
+                    "description": "Controls whether a process can gain more privileges than its parent process.",
+                    "type": "boolean"
+                },
+                "readOnlyRootFilesystem": {
+                    "description": "Mounts the container's root filesystem as read-only.",
+                    "type": "boolean"
+                },
+                "privileged": {
+                    "description": "Runs the container in privileged mode.",
+                    "type": "boolean"
+                },
+                "capabilities": {
+                    "description": "POSIX capabilities to add or drop.",
+                    "type": "object",
+                    "properties": {
+                        "add": {
+                            "description": "Capabilities to add.",
+                            "type": "array",
+                            "items": { "type": "string" }
+                        },
+                        "drop": {
+                            "description": "Capabilities to drop.",
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    }
+                },
+                "runAsUser": {
+                    "description": "UID to run the container process as. Overrides the pod-level setting.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "runAsGroup": {
+                    "description": "GID to run the container process as. Overrides the pod-level setting.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "runAsNonRoot": {
+                    "description": "Requires the container to run as a non-root user. Overrides the pod-level setting.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "secrets": {
+            "description": "Secret injection configuration via HashiCorp Vault. Set to `false` to disable.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "environment": {
+                    "description": "Vault-injected environment secrets. Secrets are read from `<root>/<namespace>/<chart-name>`.",
+                    "type": "object",
+                    "properties": {
+                        "root": {
+                            "description": "Root Vault path prefix (e.g. `environment/data`).",
+                            "type": "string"
+                        },
+                        "mountPath": {
+                            "description": "Container path where rendered secret files will be written.",
+                            "type": "string"
+                        },
+                        "paths": {
+                            "description": "List of secret file paths to inject from Vault.",
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    },
+                    "required": ["root", "mountPath", "paths"]
+                },
+                "certs": {
+                    "description": "List of certificate secret names to mount.",
+                    "type": "array",
+                    "items": { "type": "string" }
+                }
+            },
+            "required": ["environment", "certs"]
+        },
+        "serviceMesh": {
+            "description": "Linkerd service mesh configuration. Set to `false` to disable.",
+            "type": ["object", "boolean"],
+            "properties": {
+                "skipOutboundPorts": {
+                    "description": "Outbound ports to exclude from Linkerd proxying (e.g. databases, Vault).",
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+                },
+                "skipInboundPorts": {
+                    "description": "Inbound ports to exclude from Linkerd proxying.",
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+                }
+            }
+        },
+        "volumes": {
+            "description": "Persistent volumes to attach to the container.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the volume.",
+                        "type": "string"
+                    },
+                    "target": {
+                        "description": "Absolute path to mount the volume in the container.",
+                        "type": "string"
+                    },
+                    "size": {
+                        "description": "Requested storage size (e.g. `1Gi`).",
+                        "type": "string"
+                    },
+                    "storageClass": {
+                        "description": "Storage class to use. Defaults to `default`.",
+                        "type": "string"
+                    },
+                    "accessModes": {
+                        "description": "PVC access modes.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"]
+                        }
+                    },
+                    "filesystem": {
+                        "description": "Volume mode: `Filesystem` or `Block`. Defaults to `Filesystem`.",
+                        "type": "string",
+                        "enum": ["Filesystem", "Block"]
+                    }
+                },
+                "required": ["name", "target", "size"]
+            }
+        },
+        "tolerations": {
+            "description": "Tolerations allow pods to be scheduled on nodes with matching taints.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": { "type": "string" },
+                    "operator": { "type": "string", "enum": ["Exists", "Equal"] },
+                    "value": { "type": "string" },
+                    "effect": { "type": "string", "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"] },
+                    "tolerationSeconds": { "type": "integer" }
+                }
+            }
+        },
+        "affinity": {
+            "description": "Affinity and anti-affinity rules for pod scheduling.",
+            "type": "object"
+        },
+        "initContainers": {
+            "description": "Init containers run to completion before the main container starts.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": { "description": "Name of the init container.", "type": "string" },
+                    "image": { "description": "Container image.", "type": "string" },
+                    "command": {
+                        "description": "Command to run.",
+                        "oneOf": [
+                            { "type": "string" },
+                            { "type": "array", "items": { "type": "string" } }
+                        ]
+                    },
+                    "args": {
+                        "description": "Arguments to the command.",
+                        "oneOf": [
+                            { "type": "string" },
+                            { "type": "array", "items": { "type": "string" } }
+                        ]
+                    }
+                },
+                "required": ["name", "image"]
+            }
+        },
+        "lifecycle": {
+            "description": "Lifecycle hooks for the main container (postStart, preStop).",
+            "type": "object"
+        },
+        "rollout": {
+            "description": "Rollout strategy configuration.",
+            "type": "object",
+            "properties": {
+                "strategy": {
+                    "description": "Rollout strategy: `rolling` and `recreate` use a standard Kubernetes Deployment; `canary`, and `bluegreen` use an Argo Rollout.",
+                    "type": "string",
+                    "enum": ["rolling", "recreate", "canary", "bluegreen"]
+                },
+                "maxSurge": {
+                    "description": "Maximum pods that can be created above the desired count during a rolling update. Integer or percentage string.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer", "minimum": 0 }
+                    ]
+                },
+                "maxUnavailable": {
+                    "description": "Maximum pods that can be unavailable during a rolling update. Integer or percentage string.",
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer", "minimum": 0 }
+                    ]
+                },
+                "canary": {
+                    "description": "Canary rollout configuration. Required when strategy is `canary`.",
+                    "type": "object",
+                    "properties": {
+                        "prometheusAddress": {
+                            "description": "Prometheus base URL used by the AnalysisTemplate to query Traefik success-rate metrics.",
+                            "type": "string"
+                        },
+                        "analysis": {
+                            "description": "AnalysisTemplate metric configuration for the canary success-rate check.",
+                            "type": "object",
+                            "properties": {
+                                "interval": {
+                                    "description": "How often to run the metric query (e.g. `1h`, `5m`).",
+                                    "type": "string"
+                                },
+                                "successThreshold": {
+                                    "description": "Minimum success rate (0–1) required to consider the metric passing. Rendered as `result[0] >= <value>`.",
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                },
+                                "failureLimit": {
+                                    "description": "Number of consecutive metric failures allowed before the analysis is marked as failed.",
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "timeout": {
+                                    "description": "Seconds to wait for a metric query response before timing out.",
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            },
+                            "required": ["interval", "successThreshold", "failureLimit", "timeout"]
+                        },
+                        "steps": {
+                            "description": "Ordered list of Argo Rollouts canary steps (setWeight, pause, analysis, etc.).",
+                            "type": "array",
+                            "items": { "type": "object" }
+                        }
+                    },
+                    "required": ["prometheusAddress", "steps"]
+                },
+                "blueGreen": {
+                    "description": "Blue-green rollout configuration. Required when strategy is `bluegreen`.",
+                    "type": "object",
+                    "properties": {
+                        "autoPromotionEnabled": {
+                            "description": "Automatically promote the new version without manual approval.",
+                            "type": "boolean"
+                        },
+                        "autoPromotionSeconds": {
+                            "description": "Seconds to wait before auto-promoting. Only effective when autoPromotionEnabled is true.",
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "scaleDownDelaySeconds": {
+                            "description": "Seconds to wait before scaling down the old version after promotion.",
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "previewReplicaCount": {
+                            "description": "Number of replicas to run for the preview (new) version before promotion.",
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": ["autoPromotionEnabled", "scaleDownDelaySeconds"]
+                }
+            },
+            "required": ["strategy"]
+        }
+    },
+    "required": ["name", "image", "replicas", "autoscaling", "revisions", "serviceAccount", "priority", "env", "ports", "hostnames", "healthcheck", "resources", "podSecurityContext", "securityContext", "secrets", "serviceMesh", "volumes", "rollout"]
+}

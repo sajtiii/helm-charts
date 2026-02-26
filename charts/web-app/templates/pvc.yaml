@@ -1,0 +1,16 @@
+{{- range .Values.volumes -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "name" $ }}-volume-{{ .name }}
+spec:
+  accessModes:
+    {{- (.accessModes | default (list "ReadWriteMany")) | toYaml | nindent 4 }}
+  volumeMode: {{ .filesystem | default "Filesystem" }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  storageClassName: {{ .storageClass | default "default" }}
+---
+
+{{- end }}

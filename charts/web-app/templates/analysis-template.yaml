@@ -1,0 +1,37 @@
+{{- with .Values.rollout }}
+{{- if eq .strategy "canary" -}}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ template "name" $ }}-success-rate
+spec:
+  args:
+    - name: target
+  metrics:
+    - name: success-rate
+      interval: {{ .canary.analysis.interval }}
+      successCondition: "result[0] >= {{ .canary.analysis.successThreshold }}"
+      failureLimit: {{ .canary.analysis.failureLimit }}
+      timeout: {{ .canary.analysis.timeout }}
+      provider:
+        prometheus:
+          address: {{ .canary.prometheusAddress }}
+          query: |
+            sum(
+              rate(
+                traefik_service_requests_total{
+                  service=~".*{{ "{{" }}args.target{{ "}}" }}.*",
+                  code!~"5.."
+                }[5m]
+              )
+            )
+            /
+            sum(
+              rate(
+                traefik_service_requests_total{
+                  service=~".*{{ "{{" }}args.target{{ "}}" }}.*"
+                }[5m]
+              )
+            )
+{{- end }}
+{{- end }}

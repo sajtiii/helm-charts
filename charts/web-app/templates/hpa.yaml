@@ -1,0 +1,41 @@
+{{- if kindIs "map" .Values.autoscaling }}
+{{- with .Values.autoscaling -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "name" $ }}
+spec:
+  scaleTargetRef:
+    {{- if or (eq $.Values.rollout.strategy "canary") (eq $.Values.rollout.strategy "bluegreen") }}
+    apiVersion: argoproj.io/v1alpha1
+    kind: Rollout
+    {{- else }}
+    apiVersion: apps/v1
+    kind: Deployment
+    {{- end }}
+    name: {{ include "name" $ }}
+  minReplicas: {{ .replicas.min }}
+  maxReplicas: {{ .replicas.max }}
+  metrics:
+    {{- if .cpuTarget }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .cpuTarget }}
+    {{- end }}
+    {{- if .memoryTarget }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .memoryTarget }}
+    {{- end }}
+  {{- if .behavior }}
+  behavior:
+    {{- toYaml .behavior | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

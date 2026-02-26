@@ -1,0 +1,163 @@
+{{- define "deployment.template" }}
+{{- with .Values }}
+{{- $name := include "name" $ }}
+{{- if not (kindIs "map" .autoscaling) }}
+replicas: {{ .replicas }}
+{{- end }}
+revisionHistoryLimit: {{ .revisions }}
+selector:
+  matchLabels:
+    app: {{ $name }}
+template:
+  metadata:
+    labels:
+      app: {{ $name }}
+    annotations:
+      {{- if kindIs "map" .serviceMesh }}
+      linkerd.io/inject: "enabled"
+      config.linkerd.io/skip-outbound-ports: {{ join "," .serviceMesh.skipOutboundPorts | quote }}
+      config.linkerd.io/skip-inbound-ports: {{ join "," .serviceMesh.skipInboundPorts | quote }}
+      config.linkerd.io/proxy-cpu-limit: "0.5"
+      config.linkerd.io/proxy-cpu-request: "0.1"
+      config.linkerd.io/proxy-memory-limit: "512Mi"
+      config.linkerd.io/proxy-memory-request: "128Mi"
+      {{- end }}
+      {{- if kindIs "map" .secrets }}
+      {{- if and (kindIs "map" .secrets.environment) (gt (len .secrets.environment.paths) 0) }}
+      vault.hashicorp.com/agent-inject: "true"
+      vault.hashicorp.com/agent-pre-populate-only: "true"
+      vault.hashicorp.com/role: {{ $.Release.Namespace }}
+      {{- $secretIndex := 0 }}
+      {{- range .secrets.environment.paths }}
+      {{- $path := printf "%s/%s/%s/%s" $.Values.secrets.environment.root $.Release.Namespace $.Chart.Name . }}
+      {{- $fileName := printf "%02d-%s" $secretIndex . }}
+      {{- $secretIndex = add1 $secretIndex }}
+      vault.hashicorp.com/agent-inject-secret-{{ $fileName }}: "{{ $path }}"
+      vault.hashicorp.com/agent-inject-template-{{ $fileName }}: |
+          {{`{{- with secret "`}}{{ $path }}{{`" }}
+          {{- range $k, $v := .Data.data }}
+              {{- if not (contains "$" $v) }}
+              export {{ $k }}="{{ $v }}"
+              {{- end }}
+          {{- end }}
+          {{- range $k, $v := .Data.data }}
+              {{- if contains "$" $v }}
+              export {{ $k }}="{{ $v }}"
+              {{- end }}
+          {{- end }}
+          {{- end }}`}}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+  spec:
+    {{- if kindIs "map" .podSecurityContext }}
+    securityContext:
+      {{- toYaml .podSecurityContext | nindent 6 }}
+    {{- end }}
+    {{- if kindIs "map" .serviceAccount }}
+    serviceAccountName: {{ .serviceAccount.name | default (printf "%s-account" $.Release.Namespace) }}
+    {{- end }}
+    priorityClassName: {{ $name }}
+    {{- if .image.pullSecrets }}
+    imagePullSecrets:
+      {{- toYaml .image.pullSecrets | nindent 6 }}
+    {{- end }}
+    {{- if .tolerations }}
+    tolerations:
+      {{- toYaml .tolerations | nindent 6 }}
+    {{- end }}
+    {{- if .affinity }}
+    affinity:
+      {{- toYaml .affinity | nindent 6 }}
+    {{- end }}
+    {{- if .initContainers }}
+    initContainers:
+      {{- toYaml .initContainers | nindent 6 }}
+    {{- end }}
+    containers:
+      - name: "app"
+        image: {{ .image.repository }}:{{ .image.tag }}
+        imagePullPolicy: {{ .image.pullPolicy }}
+        {{- if .image.command }}
+        command: {{ include "command" .image.command }}
+        {{- end }}
+        {{- if .image.args }}
+        args: {{ include "command" .image.args }}
+        {{- end }}
+        {{- if .env }}
+        env:
+          {{- range .env }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+        {{- end }}
+        ports:
+          {{- range .ports }}
+          - name: {{ .name }}
+            containerPort: {{ .port }}
+            protocol: {{ .protocol | default "TCP"}}
+          {{- end }}
+        {{- if kindIs "map" .healthcheck }}
+        {{- if kindIs "map" .healthcheck.startup }}
+        startupProbe:
+          {{- include "healthcheck.definition" .healthcheck.startup | nindent 10 }}
+        {{- end }}
+        livenessProbe:
+          {{- include "healthcheck.definition" .healthcheck.liveness | nindent 10 }}
+        readinessProbe:
+          {{- include "healthcheck.definition" .healthcheck.readiness | nindent 10 }}
+        {{- end }}
+        resources:
+          limits:
+            cpu: {{ .resources.limits.cpu | quote }}
+            memory: {{ .resources.limits.memory | quote }}
+          requests:
+            cpu: {{ .resources.requests.cpu | quote }}
+            memory: {{ .resources.requests.memory | quote }}
+        {{- if .volumes }}
+        volumeMounts:
+          {{- range .volumes }}
+          - name: volume-{{ .name }}
+            mountPath: {{ .target }}
+          {{- end }}
+        {{- end }}
+        {{- if .lifecycle }}
+        lifecycle:
+          {{- toYaml .lifecycle | nindent 10 }}
+        {{- end }}
+        {{- if kindIs "map" .securityContext }}
+        securityContext:
+          {{- toYaml .securityContext | nindent 10 }}
+        {{- end }}
+
+    {{- if .volumes }}
+    volumes:
+      {{- range .volumes }}
+      - name: volume-{{ .name }}
+        persistentVolumeClaim:
+          claimName: {{ $name }}-volume-{{ .name }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+
+
+{{- define "healthcheck.definition" }}
+{{- if eq .type "http" -}}
+httpGet:
+  port: {{ .port }}
+  path: {{ .path }}
+{{- end }}
+{{- if eq .type "cmd" -}}
+exec:
+  command: {{ include "command" .cmd }}
+{{- end }}
+{{- if eq .type "custom" -}}
+{{ toYaml .definition | trim }}
+{{- end }}
+initialDelaySeconds: {{ .initialDelay }}
+timeoutSeconds: {{ .timeout }}
+failureThreshold: {{ .failureThreshold | default 3 }}
+successThreshold: {{ .successThreshold | default 1 }}
+periodSeconds: {{ .period }}
+{{- end }}

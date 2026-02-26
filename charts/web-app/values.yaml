@@ -1,0 +1,309 @@
+# -- The name used to identify all Kubernetes resources created by this chart.
+# name: ""
+
+image:
+  # -- The container image repository (e.g. `ghcr.io/my-org/my-app`).
+  # repository: ""
+
+  # -- The image tag to deploy.
+  tag: "latest"
+
+  # -- Image pull policy. One of: `Always`, `IfNotPresent`, `Never`.
+  pullPolicy: "IfNotPresent"
+
+  # -- Image pull secrets for authenticating against private container registries.
+  pullSecrets: []
+  # pullSecrets:
+  #   - name: my-registry-secret
+
+  # -- Override the container entrypoint. Accepts a string or a list of strings.
+  # Equivalent to `ENTRYPOINT` in a Dockerfile.
+  # command: "" or []
+
+  # -- Override the container command arguments. Accepts a string or a list of strings.
+  # Equivalent to `CMD` in a Dockerfile.
+  # args: "" or []
+
+  # -- ArgoCD Image Updater integration.
+  # Set to `true` to enable with default settings (digest strategy),
+  # or provide a configuration object to customize the behavior.
+  autoUpdate: false
+  # autoUpdate: true                          # Enable with all defaults (strategy: digest)
+  # autoUpdate:                               # Enable with custom configuration
+  #   strategy: digest                        # Update strategy: digest (default), semver, latest, or name
+  #   allowTags: "regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$"  # Optional regex filter for allowed tags
+  #   ignoreTags: "latest,dev"                # Optional comma-separated list of tags to ignore
+  #   pullSecret: ""                          # Optional pull secret reference: pullsecret:namespace/secret-name
+  #   writeBack: argocd                       # Where to write back the updated image tag: argocd (default) or git
+  #   gitRepository: ""                       # Git repository URL — required when writeBack is git
+  #   gitBranch: ""                           # Git branch to commit the update to — required when writeBack is git
+
+# -- Number of pod replicas to run. Mutually exclusive with `autoscaling`.
+replicas: 1
+
+# -- Horizontal Pod Autoscaler configuration.
+# Set to `false` to disable. Mutually exclusive with `replicas`.
+autoscaling: false
+  # replicas:
+  #   min: 1                                  # Minimum number of replicas to maintain
+  #   max: 3                                  # Maximum number of replicas to scale up to
+  # cpuTarget: 80                             # Target average CPU utilization percentage (1-100) across all pods
+  # memoryTarget: 80                          # Target average memory utilization percentage (1-100) across all pods
+  # behavior:
+  #   scaleDown:
+  #     stabilizationWindowSeconds: 300       # Wait this many seconds before scaling down to prevent flapping
+  #   scaleUp:
+  #     stabilizationWindowSeconds: 60        # Wait this many seconds before scaling up
+
+# -- Number of old ReplicaSets to retain to allow rollback.
+revisions: 3
+
+# -- Service account configuration for pods.
+# Set to `false` to omit serviceAccountName from the pod spec (Kubernetes uses the namespace default).
+serviceAccount:
+  # -- Service account name. Defaults to `<namespace>-account` when empty.
+  name: ""
+
+# -- Priority class value assigned to pods. Higher values mean higher scheduling priority.
+priority: 100
+
+# -- Pod Disruption Budget configuration.
+# Ensures a minimum number of pods remain available during voluntary disruptions (e.g. node drains).
+# Set to `false` to disable.
+pdb:
+  # -- Minimum number or percentage of pods that must remain available during a voluntary disruption.
+  minAvailable: 50%
+  # maxUnavailable: 50%                       # Alternative: maximum number/percentage of pods allowed to be unavailable simultaneously
+
+# -- Environment variables to inject into the container.
+env: []
+# env:
+#   - name: "FOO"
+#     value: "bar"
+
+# -- Container port definitions exposed by the pod. Each port must have a unique name.
+ports:
+  - name: "http"
+    protocol: "TCP"                           # Transport protocol: TCP (default) or UDP
+    port: 80
+
+# -- Ingress hostname and routing configuration.
+# Each entry can be a bare hostname string (routes all traffic to the default "http" port)
+# or a hostname map with detailed per-path routing rules.
+hostnames: []
+# hostnames:
+#   - "example.com":
+#       paths:
+#         - path: /
+#           type: prefix                      # Path matching type: exact, prefix (default), or regex
+#           port: http                        # Named port to route traffic to, defaults to "http"
+#           scheme: http                      # Backend protocol: http (default), https, or h2c
+#           serviceMesh: true                 # Override service mesh sidecar injection for this specific route
+#           middlewares:
+#             ipallowlist:
+#               range:
+#                 - "10.0.0.0/8"
+#                 - "192.168.0.0/16"
+#               depth: 1                      # Number of trusted proxy hops used for client IP extraction
+#         - path: /api
+#           type: prefix
+#           port: http
+#           scheme: http
+#   - "www.example.com"                       # Bare hostname — routes all traffic to the default "http" port
+
+# -- Liveness and readiness probe configuration.
+# Set to `false` to disable all health checks.
+healthcheck:
+  # -- Liveness probe — Kubernetes restarts the container if this probe fails continuously.
+  liveness:
+    # -- Probe mechanism. One of: `http` (HTTP GET), `cmd` (exec command), `custom` (raw probe spec).
+    type: "http"
+    port: "http"                              # Named port to send the HTTP GET to — used when type is http
+    path: "/"                                 # HTTP path for the health check request — used when type is http
+    cmd: "ls"                                 # Shell command to execute inside the container — used when type is cmd
+    definition: {}                            # Raw Kubernetes probe spec (e.g. tcpSocket) — used when type is custom
+    initialDelay: 30                          # Seconds to wait after container startup before the first probe
+    period: 15                                # How often (in seconds) to perform the probe
+    timeout: 3                                # Seconds after which a probe attempt is considered failed
+    failureThreshold: 3                       # Consecutive failures required to mark the container as unhealthy
+    successThreshold: 1                       # Consecutive successes required to mark the container as healthy again
+
+  # -- Readiness probe — Kubernetes removes the pod from Service endpoints if this probe fails.
+  readiness:
+    # -- Probe mechanism. One of: `http` (HTTP GET), `cmd` (exec command), `custom` (raw probe spec).
+    type: "http"
+    port: "http"                              # Named port to send the HTTP GET to — used when type is http
+    path: "/"                                 # HTTP path for the health check request — used when type is http
+    cmd: "ls"                                 # Shell command to execute inside the container — used when type is cmd
+    definition: {}                            # Raw Kubernetes probe spec (e.g. tcpSocket) — used when type is custom
+    initialDelay: 5                           # Seconds to wait after container startup before the first probe
+    period: 3                                 # How often (in seconds) to perform the probe
+    timeout: 3                                # Seconds after which a probe attempt is considered failed
+    failureThreshold: 3                       # Consecutive failures required to mark the pod as not ready
+    successThreshold: 2                       # Consecutive successes required to mark the pod as ready again
+
+  # -- Startup probe — Kubernetes waits for this to pass before starting liveness and readiness probes.
+  # Omit to disable. Useful for slow-starting containers to prevent premature restarts during initialisation.
+  # startup:
+  #   type: "http"
+  #   port: "http"
+  #   path: "/"
+  #   initialDelay: 0
+  #   period: 10                              # Check every 10 seconds
+  #   timeout: 3
+  #   failureThreshold: 30                    # Allow up to failureThreshold * period seconds (e.g. 5 min) for startup
+  #   successThreshold: 1
+
+# -- CPU and memory resource requests and limits for the container.
+resources:
+  limits:
+    cpu: "1"                                  # Hard cap on CPU usage (the container is throttled if exceeded)
+    memory: "1Gi"                             # Hard cap on memory usage (the container is OOM-killed if exceeded)
+  requests:
+    cpu: "0.1"                                # CPU reserved on the node for scheduling purposes
+    memory: "256Mi"                           # Memory reserved on the node for scheduling purposes
+
+# -- Pod-level security context applied to all containers in the pod.
+# Set to `false` to disable.
+podSecurityContext:
+  runAsNonRoot: true                          # Reject the container if it attempts to run as UID 0 (root)
+  runAsUser: 1000                             # UID to run the container's main process as
+  runAsGroup: 1000                            # GID to run the container's main process as
+  fsGroup: 1000                               # GID used for volume ownership and file permission checks
+  seccompProfile:
+    # -- Seccomp profile type to apply. One of: `RuntimeDefault` (recommended), `Localhost`, `Unconfined`.
+    type: RuntimeDefault
+    # localhostProfile: profiles/audit.json   # Path to a node-local seccomp profile — required when type is Localhost
+
+# -- Container-level security context.
+# Set to `false` to disable.
+securityContext:
+  allowPrivilegeEscalation: false             # Prevent the process from gaining more privileges than its parent process
+  readOnlyRootFilesystem: true                # Mount the container's root filesystem as read-only
+  privileged: false                           # Do not run the container with full host privileges
+  capabilities:
+    drop:
+      - ALL                                   # Drop all Linux capabilities as a secure baseline
+    # add:
+    #   - NET_BIND_SERVICE                    # Re-add only if the app needs to bind to privileged ports (< 1024)
+
+# -- Secret injection configuration via HashiCorp Vault Agent.
+# Set to `false` to disable (default). Provide an object to enable Vault secret injection.
+secrets: false
+# secrets:
+#   environment:                              # Vault-injected environment secrets
+#     root: "environment/data"               # Vault KV v2 mount path prefix
+#     mountPath: "/vault/secrets"            # Directory where rendered secret files are mounted
+#     paths:
+#       - "app-config"                       # Rendered as {{ mountPath }}/00-app-config
+#       - "db-credentials"                   # Rendered as {{ mountPath }}/01-db-credentials
+#   certs: []                                # Kubernetes TLS secret names to mount as certificate volumes
+
+# -- Linkerd service mesh sidecar injection configuration.
+# Set to `false` to disable sidecar injection for this workload entirely.
+serviceMesh: false
+  # skipOutboundPorts:                        # Ports to exclude from outbound proxy interception (bypass the mesh)
+  #   - 3306                                  # MySQL — typically excluded to avoid proxy overhead
+  #   - 8200                                  # Vault — excluded so the Vault agent can communicate directly
+  # skipInboundPorts: []                      # Ports to exclude from inbound proxy interception
+
+# -- Persistent Volume Claim definitions.
+# Each entry creates a PVC and mounts it into the container at the specified path.
+volumes: []
+# volumes:
+#   - name: data
+#     target: /data                           # Mount path inside the container
+#     size: 1Gi                               # Requested storage capacity
+#     storageClass: default                   # Optional storage class name, defaults to "default"
+#     accessModes:                            # Optional access mode list, defaults to [ReadWriteMany]
+#       - ReadWriteMany
+#     filesystem: Filesystem                  # Optional volume mode: Filesystem (default) or Block
+
+# -- Tolerations allow pods to be scheduled on nodes with matching taints.
+tolerations: []
+# tolerations:
+#   - key: "spot-instance"
+#     operator: "Exists"
+#     effect: "NoSchedule"
+
+# -- Affinity and anti-affinity rules for pod scheduling.
+# Set to `{}` to disable (default).
+affinity: {}
+# affinity:
+#   podAntiAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#       - weight: 100
+#         podAffinityTerm:
+#           topologyKey: kubernetes.io/hostname
+#           labelSelector:
+#             matchLabels:
+#               app: web-app-myapp            # Replace with your app label
+
+# -- Init containers run to completion before the main container starts.
+# Useful for database migrations, config generation, or dependency checks.
+initContainers: []
+# initContainers:
+#   - name: migrate
+#     image: my-app:latest
+#     command: ["python", "manage.py", "migrate"]
+
+# -- Lifecycle hooks for the main container.
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "sleep 10"]  # Grace period before shutdown
+#   postStart:
+#     exec:
+#       command: ["/bin/sh", "-c", "echo started"]
+
+# -- Deployment rollout strategy configuration.
+rollout:
+  # -- Rollout strategy type.
+  # `rolling` and `recreate` use a standard Kubernetes Deployment.
+  # `canary` and `bluegreen` use an Argo Rollout resource for advanced traffic shifting.
+  strategy: "rolling"
+
+  # -- Maximum number of pods that can be scheduled above the desired replica count during a rolling update.
+  # Accepts an absolute number or a percentage (e.g. `50%`).
+  maxSurge: 50%
+
+  # -- Maximum number of pods that can be unavailable during a rolling update.
+  # Accepts an absolute number or a percentage (e.g. `25%`).
+  maxUnavailable: 25%
+
+  # -- Canary rollout configuration. Only used when `strategy` is `canary`.
+  canary:
+    # -- Prometheus endpoint used to query success-rate metrics during analysis.
+    prometheusAddress: "http://prometheus-server.monitoring.svc.cluster.local"
+    analysis:
+      interval: "30m"                         # How frequently analysis metrics are evaluated
+      successThreshold: 0.95                  # Minimum success rate (0.0–1.0) required to continue the rollout
+      failureLimit: 3                         # Number of consecutive failed analysis runs that abort the rollout
+      timeout: 60                             # Maximum minutes allowed for a single analysis run to complete
+    # -- Ordered list of traffic-shifting steps for the canary rollout.
+    # `setWeight` shifts the percentage of traffic sent to the canary.
+    # `pause` holds the rollout at the current weight for the given duration.
+    steps:
+      - setWeight: 10
+      - pause: { duration: 30m }
+      - setWeight: 25
+      - pause: { duration: 30m }
+      - setWeight: 50
+      - pause: { duration: 1h }
+      - setWeight: 75
+      - pause: { duration: 2h }
+      - setWeight: 100
+
+  # -- Blue/green rollout configuration. Only used when `strategy` is `bluegreen`.
+  blueGreen:
+    # -- Automatically promote the new (green) version without requiring manual approval.
+    # When `false`, a human must approve the promotion via the Argo Rollouts UI or CLI.
+    autoPromotionEnabled: false
+    # autoPromotionSeconds: 30               # Seconds to wait before auto-promoting (requires autoPromotionEnabled: true)
+
+    # -- Seconds to wait after promotion before scaling down the old (blue) version.
+    # Provides a grace period to allow in-flight requests to complete.
+    scaleDownDelaySeconds: 30
+
+    # -- Number of replicas to run for the preview (blue) version while awaiting promotion.
+    previewReplicaCount: 1

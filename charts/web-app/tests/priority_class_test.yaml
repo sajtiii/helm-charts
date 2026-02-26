@@ -1,0 +1,44 @@
+suite: priority class
+templates:
+  - templates/priority-class.yaml
+tests:
+  - it: should render PriorityClass
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isKind:
+          of: PriorityClass
+      - isAPIVersion:
+          of: scheduling.k8s.io/v1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+
+  - it: should use default priority value
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - equal:
+          path: value
+          value: 100
+
+  - it: should use custom priority value
+    set:
+      name: myapp
+      image.repository: nginx
+      priority: 500
+    asserts:
+      - equal:
+          path: value
+          value: 500
+
+  - it: should set globalDefault to false
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - equal:
+          path: globalDefault
+          value: false

@@ -1,0 +1,26 @@
+{{- with .Values.rollout }}
+{{- if eq .strategy "bluegreen" -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "name" $ }}
+  {{- if $.Values.image.autoUpdate }}
+  annotations:
+    {{- include "image.autoUpdate.annotations" $ | nindent 4 }}
+  {{- end }}
+spec:
+  strategy:
+    blueGreen:
+      activeService: {{ include "name" $ }}
+      previewService: {{ include "name" $ }}-preview
+      autoPromotionEnabled: {{ .blueGreen.autoPromotionEnabled }}
+      {{- if .blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .blueGreen.autoPromotionSeconds }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .blueGreen.scaleDownDelaySeconds }}
+      {{- if .blueGreen.previewReplicaCount }}
+      previewReplicaCount: {{ .blueGreen.previewReplicaCount }}
+      {{- end }}
+  {{- include "deployment.template" $ | nindent 2 }}
+{{- end }}
+{{- end }}

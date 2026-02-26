@@ -1,0 +1,105 @@
+suite: service
+templates:
+  - templates/service.yaml
+tests:
+  - it: should render a headless Service by default
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isKind:
+          of: Service
+      - isAPIVersion:
+          of: v1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+      - equal:
+          path: spec.clusterIP
+          value: None
+
+  - it: should configure service ports
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: http
+            port: 80
+            protocol: TCP
+            targetPort: http
+
+  - it: should render 3 documents for canary strategy
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - hasDocuments:
+          count: 3
+
+  - it: should render canary Service for canary strategy
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    documentIndex: 1
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: web-app-myapp-canary
+
+  - it: should render TraefikService for canary strategy
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    documentIndex: 2
+    asserts:
+      - isKind:
+          of: TraefikService
+      - isAPIVersion:
+          of: traefik.io/v1alpha1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+
+  - it: should set initial weights on TraefikService for canary strategy
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    documentIndex: 2
+    asserts:
+      - equal:
+          path: spec.weighted.services[0].weight
+          value: 100
+      - equal:
+          path: spec.weighted.services[1].weight
+          value: 0
+
+  - it: should render 2 documents for bluegreen strategy
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: should render preview Service for bluegreen strategy
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    documentIndex: 1
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: web-app-myapp-preview

@@ -1,0 +1,20 @@
+{{- if or (eq .Values.rollout.strategy "rolling") (eq .Values.rollout.strategy "recreate") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "name" $ }}
+  {{- if .Values.image.autoUpdate }}
+  annotations:
+    {{- include "image.autoUpdate.annotations" $ | nindent 4 }}
+  {{- end }}
+spec:
+  strategy:
+    {{- $rolloutStrategy := eq .Values.rollout.strategy "recreate" | ternary "Recreate" "RollingUpdate" }}
+    type: {{ $rolloutStrategy }}
+    {{- if eq $rolloutStrategy "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.rollout.maxSurge }}
+      maxUnavailable: {{ .Values.rollout.maxUnavailable }}
+    {{- end }}
+  {{- include "deployment.template" $ | nindent 2 }}
+{{- end }}

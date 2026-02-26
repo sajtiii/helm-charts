@@ -1,0 +1,460 @@
+suite: deployment
+templates:
+  - templates/deployment.yaml
+tests:
+  - it: should render a Deployment with rolling strategy
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isKind:
+          of: Deployment
+      - isAPIVersion:
+          of: apps/v1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+      - equal:
+          path: spec.strategy.type
+          value: RollingUpdate
+
+  - it: should render a Deployment with recreate strategy
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: recreate
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - isNull:
+          path: spec.strategy.rollingUpdate
+
+  - it: should not render when strategy is canary
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render when strategy is bluegreen
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not include replicas when autoscaling is enabled
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 80
+      autoscaling.memoryTarget: 80
+    asserts:
+      - isNull:
+          path: spec.replicas
+
+  - it: should include replicas when HPA is disabled
+    set:
+      name: myapp
+      image.repository: nginx
+      replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should set rolling update parameters
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - equal:
+          path: spec.strategy.rollingUpdate.maxSurge
+          value: 50%
+      - equal:
+          path: spec.strategy.rollingUpdate.maxUnavailable
+          value: 25%
+
+  - it: should set revision history limit
+    set:
+      name: myapp
+      image.repository: nginx
+      revisions: 5
+    asserts:
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 5
+
+  - it: should set correct selector and pod template labels
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels.app
+          value: web-app-myapp
+      - equal:
+          path: spec.template.metadata.labels.app
+          value: web-app-myapp
+
+  - it: should set the container image
+    set:
+      name: myapp
+      image.repository: nginx
+      image.tag: "1.21"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "nginx:1.21"
+
+  - it: should set image pull policy
+    set:
+      name: myapp
+      image.repository: nginx
+      image.pullPolicy: Always
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: Always
+
+  - it: should apply pod security context by default
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1000
+
+  - it: should omit pod security context when disabled
+    set:
+      name: myapp
+      image.repository: nginx
+      podSecurityContext: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.securityContext
+
+  - it: should apply container security context by default
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+
+  - it: should omit container security context when disabled
+    set:
+      name: myapp
+      image.repository: nginx
+      securityContext: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].securityContext
+
+  - it: should set resource limits and requests
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: "1"
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 1Gi
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: "0.1"
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 256Mi
+
+  - it: should set environment variables
+    set:
+      name: myapp
+      image.repository: nginx
+      env:
+        - name: FOO
+          value: bar
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FOO
+            value: bar
+
+  - it: should configure http port
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: http
+            containerPort: 80
+            protocol: TCP
+
+  - it: should include autoUpdate annotations when enabled
+    set:
+      name: myapp
+      image.repository: nginx
+      image.autoUpdate: true
+    asserts:
+      - isNotNull:
+          path: metadata.annotations
+
+  - it: should add linkerd annotations when serviceMesh is enabled
+    set:
+      name: myapp
+      image.repository: nginx
+      serviceMesh:
+        skipOutboundPorts: []
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["linkerd.io/inject"]
+          value: "enabled"
+
+  - it: should use default service account name convention
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.serviceAccountName
+          pattern: ^.+-account$
+
+  - it: should use custom service account name when set
+    set:
+      name: myapp
+      image.repository: nginx
+      serviceAccount.name: my-custom-sa
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: my-custom-sa
+
+  - it: should omit serviceAccountName when serviceAccount is false
+    set:
+      name: myapp
+      image.repository: nginx
+      serviceAccount: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.serviceAccountName
+
+  - it: should set imagePullSecrets when configured
+    set:
+      name: myapp
+      image.repository: nginx
+      image.pullSecrets:
+        - name: my-registry-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.imagePullSecrets
+          content:
+            name: my-registry-secret
+
+  - it: should not set imagePullSecrets when empty
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should set startupProbe when configured
+    set:
+      name: myapp
+      image.repository: nginx
+      healthcheck.startup:
+        type: http
+        port: http
+        path: /healthz
+        initialDelay: 0
+        period: 10
+        timeout: 3
+        failureThreshold: 30
+        successThreshold: 1
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].startupProbe
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.httpGet.path
+          value: /healthz
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.failureThreshold
+          value: 30
+
+  - it: should not set startupProbe when omitted
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].startupProbe
+
+  - it: should render command as JSON array from list input
+    set:
+      name: myapp
+      image.repository: nginx
+      image.command:
+        - sh
+        - -c
+        - echo hello
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value: ["sh", "-c", "echo hello"]
+
+  - it: should render command as single-element array from string input
+    set:
+      name: myapp
+      image.repository: nginx
+      image.command: sh
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value: ["sh"]
+
+  - it: should render args as JSON array from list input
+    set:
+      name: myapp
+      image.repository: nginx
+      image.args:
+        - -c
+        - echo hello
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: ["-c", "echo hello"]
+
+  - it: should omit command and args when not set
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].command
+      - isNull:
+          path: spec.template.spec.containers[0].args
+
+  - it: should render linkerd skip-inbound-ports annotation
+    set:
+      name: myapp
+      image.repository: nginx
+      serviceMesh:
+        skipOutboundPorts: []
+        skipInboundPorts:
+          - 9090
+          - 9091
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["config.linkerd.io/skip-inbound-ports"]
+          value: "9090,9091"
+
+  - it: should render tolerations when set
+    set:
+      name: myapp
+      image.repository: nginx
+      tolerations:
+        - key: spot-instance
+          operator: Exists
+          effect: NoSchedule
+    asserts:
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: spot-instance
+            operator: Exists
+            effect: NoSchedule
+
+  - it: should not render tolerations when empty
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.tolerations
+
+  - it: should render affinity when set
+    set:
+      name: myapp
+      image.repository: nginx
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.affinity.podAntiAffinity
+
+  - it: should not render affinity when empty
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.affinity
+
+  - it: should render initContainers when set
+    set:
+      name: myapp
+      image.repository: nginx
+      initContainers:
+        - name: migrate
+          image: my-app:latest
+          command: ["python", "manage.py", "migrate"]
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers
+          content:
+            name: migrate
+            image: my-app:latest
+            command: ["python", "manage.py", "migrate"]
+
+  - it: should not render initContainers when empty
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.initContainers
+
+  - it: should render lifecycle hooks when set
+    set:
+      name: myapp
+      image.repository: nginx
+      lifecycle:
+        preStop:
+          exec:
+            command: ["/bin/sh", "-c", "sleep 5"]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command
+          value: ["/bin/sh", "-c", "sleep 5"]
+
+  - it: should not render lifecycle when empty
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].lifecycle

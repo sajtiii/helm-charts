@@ -1,0 +1,157 @@
+suite: autoscaling
+templates:
+  - templates/hpa.yaml
+tests:
+  - it: should not render when autoscaling is false
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render HPA when configured
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 2
+      autoscaling.replicas.max: 10
+      autoscaling.cpuTarget: 80
+      autoscaling.memoryTarget: 70
+    asserts:
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - isAPIVersion:
+          of: autoscaling/v2
+      - equal:
+          path: metadata.name
+          value: web-app-myapp
+      - equal:
+          path: spec.minReplicas
+          value: 2
+      - equal:
+          path: spec.maxReplicas
+          value: 10
+
+  - it: should target Deployment by default
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 80
+      autoscaling.memoryTarget: 80
+    asserts:
+      - equal:
+          path: spec.scaleTargetRef.kind
+          value: Deployment
+      - equal:
+          path: spec.scaleTargetRef.apiVersion
+          value: apps/v1
+
+  - it: should target Rollout when strategy is canary
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: canary
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 80
+      autoscaling.memoryTarget: 80
+    asserts:
+      - equal:
+          path: spec.scaleTargetRef.kind
+          value: Rollout
+      - equal:
+          path: spec.scaleTargetRef.apiVersion
+          value: argoproj.io/v1alpha1
+
+  - it: should set CPU and memory utilization targets
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 75
+      autoscaling.memoryTarget: 85
+    asserts:
+      - equal:
+          path: spec.metrics[0].resource.target.averageUtilization
+          value: 75
+      - equal:
+          path: spec.metrics[1].resource.target.averageUtilization
+          value: 85
+
+  - it: should render only CPU metric when memoryTarget is omitted
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 70
+    asserts:
+      - lengthEqual:
+          path: spec.metrics
+          count: 1
+      - equal:
+          path: spec.metrics[0].resource.name
+          value: cpu
+
+  - it: should render only memory metric when cpuTarget is omitted
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.memoryTarget: 80
+    asserts:
+      - lengthEqual:
+          path: spec.metrics
+          count: 1
+      - equal:
+          path: spec.metrics[0].resource.name
+          value: memory
+
+  - it: should target Rollout when strategy is bluegreen
+    set:
+      name: myapp
+      image.repository: nginx
+      rollout.strategy: bluegreen
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 80
+    asserts:
+      - equal:
+          path: spec.scaleTargetRef.kind
+          value: Rollout
+      - equal:
+          path: spec.scaleTargetRef.apiVersion
+          value: argoproj.io/v1alpha1
+
+  - it: should render behavior when set
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 80
+      autoscaling.behavior.scaleDown.stabilizationWindowSeconds: 300
+      autoscaling.behavior.scaleUp.stabilizationWindowSeconds: 60
+    asserts:
+      - equal:
+          path: spec.behavior.scaleDown.stabilizationWindowSeconds
+          value: 300
+      - equal:
+          path: spec.behavior.scaleUp.stabilizationWindowSeconds
+          value: 60
+
+  - it: should not render behavior when omitted
+    set:
+      name: myapp
+      image.repository: nginx
+      autoscaling.replicas.min: 1
+      autoscaling.replicas.max: 5
+      autoscaling.cpuTarget: 80
+    asserts:
+      - isNull:
+          path: spec.behavior

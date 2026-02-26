@@ -1,0 +1,93 @@
+suite: middlewares
+templates:
+  - templates/middlewares.yaml
+tests:
+  - it: should not render when hostnames is empty
+    set:
+      name: myapp
+      image.repository: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render for string hostname (no middlewares)
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp"
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render for map hostname without middlewares
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp":
+            paths:
+              - path: /api
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Middleware for hostname with ipallowlist
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp":
+            paths:
+              - path: /api
+                middlewares:
+                  ipallowlist:
+                    range:
+                      - "10.0.0.0/8"
+    asserts:
+      - isKind:
+          of: Middleware
+      - isAPIVersion:
+          of: traefik.io/v1alpha1
+      - equal:
+          path: metadata.name
+          value: web-app-myapp-myapp-api
+
+  - it: should set ipAllowList source range
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp":
+            paths:
+              - path: /api
+                middlewares:
+                  ipallowlist:
+                    range:
+                      - "10.0.0.0/8"
+                      - "192.168.0.0/16"
+    asserts:
+      - contains:
+          path: spec.ipAllowList.sourceRange
+          content: "10.0.0.0/8"
+      - contains:
+          path: spec.ipAllowList.sourceRange
+          content: "192.168.0.0/16"
+
+  - it: should set ipAllowList depth when configured
+    set:
+      name: myapp
+      image.repository: nginx
+      hostnames:
+        - "myapp":
+            paths:
+              - path: /api
+                middlewares:
+                  ipallowlist:
+                    range:
+                      - "10.0.0.0/8"
+                    depth: 2
+    asserts:
+      - equal:
+          path: spec.ipAllowList.depth
+          value: 2
