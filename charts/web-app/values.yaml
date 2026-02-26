@@ -218,7 +218,7 @@ volumes: []
 #     storageClass: default                   # Optional storage class name, defaults to "default"
 #     accessModes:                            # Optional access mode list, defaults to [ReadWriteMany]
 #       - ReadWriteMany
-#     filesystem: Filesystem                  # Optional volume mode: Filesystem (default) or Block
+#     volumeMode: Filesystem                  # Optional volume mode: Filesystem or Block
 
 # -- Tolerations allow pods to be scheduled on nodes with matching taints.
 tolerations: []

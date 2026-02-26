@@ -655,8 +655,8 @@
                             "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"]
                         }
                     },
-                    "filesystem": {
-                        "description": "Volume mode: `Filesystem` or `Block`. Defaults to `Filesystem`.",
+                    "volumeMode": {
+                        "description": "Volume mode: `Filesystem` or `Block`.",
                         "type": "string",
                         "enum": ["Filesystem", "Block"]
                     }

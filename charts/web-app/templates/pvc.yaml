@@ -6,7 +6,9 @@ metadata:
 spec:
   accessModes:
     {{- (.accessModes | default (list "ReadWriteMany")) | toYaml | nindent 4 }}
-  volumeMode: {{ .filesystem | default "Filesystem" }}
+  {{- if .volumeMode }}
+  volumeMode: {{ .volumeMode }}
+  {{- end }}
   resources:
     requests:
       storage: {{ .size }}
