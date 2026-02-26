@@ -136,12 +136,16 @@
             "minimum": 1
         },
         "serviceAccount": {
-            "description": "Service account configuration for pods. Set to `false` to omit serviceAccountName from the pod spec.",
-            "type": ["object", "boolean"],
+            "description": "Service account configuration. A ServiceAccount is always created. name defaults to the app/release name.",
+            "type": "object",
             "properties": {
                 "name": {
-                    "description": "Service account name. Defaults to `<namespace>-account` when empty.",
+                    "description": "Service account name. Defaults to the app/release name when empty.",
                     "type": "string"
+                },
+                "annotations": {
+                    "description": "Extra annotations to add to the created ServiceAccount.",
+                    "type": "object"
                 }
             }
         },

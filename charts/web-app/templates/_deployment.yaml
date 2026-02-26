@@ -54,9 +54,7 @@ template:
     securityContext:
       {{- toYaml .podSecurityContext | nindent 6 }}
     {{- end }}
-    {{- if kindIs "map" .serviceAccount }}
-    serviceAccountName: {{ .serviceAccount.name | default (printf "%s-account" $.Release.Namespace) }}
-    {{- end }}
+    serviceAccountName: {{ .serviceAccount.name | default (include "name" $) }}
     priorityClassName: {{ $name }}
     {{- if .image.pullSecrets }}
     imagePullSecrets:

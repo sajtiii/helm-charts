@@ -59,9 +59,11 @@ autoscaling: false
 revisions: 3
 
 # -- Service account configuration for pods.
-# Set to `false` (default) to omit serviceAccountName from the pod spec (Kubernetes uses the "default" service account).
-# Set to `{}` or `{name: ""}` to use `<namespace>-account`, or provide a custom name.
-serviceAccount: false
+# A ServiceAccount is always created. Supports optional `name` (defaults to app name) and `annotations`.
+serviceAccount: {}
+# serviceAccount:
+#   name: ""          # Override the SA name (defaults to app / release name)
+#   annotations: {}   # Extra annotations on the created ServiceAccount
 
 # -- Priority class value assigned to pods. Higher values mean higher scheduling priority.
 priority: 100
