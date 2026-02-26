@@ -165,28 +165,30 @@ resources:
     memory: "256Mi"                           # Memory reserved on the node for scheduling purposes
 
 # -- Pod-level security context applied to all containers in the pod.
-# Set to `false` to disable.
-podSecurityContext:
-  runAsNonRoot: true                          # Reject the container if it attempts to run as UID 0 (root)
-  runAsUser: 1000                             # UID to run the container's main process as
-  runAsGroup: 1000                            # GID to run the container's main process as
-  fsGroup: 1000                               # GID used for volume ownership and file permission checks
-  seccompProfile:
-    # -- Seccomp profile type to apply. One of: `RuntimeDefault` (recommended), `Localhost`, `Unconfined`.
-    type: RuntimeDefault
-    # localhostProfile: profiles/audit.json   # Path to a node-local seccomp profile — required when type is Localhost
+# Set to `false` to disable (default).
+# podSecurityContext:
+#   runAsNonRoot: true                          # Reject the container if it attempts to run as UID 0 (root)
+#   runAsUser: 1000                             # UID to run the container's main process as
+#   runAsGroup: 1000                            # GID to run the container's main process as
+#   fsGroup: 1000                               # GID used for volume ownership and file permission checks
+#   seccompProfile:
+#     # -- Seccomp profile type to apply. One of: `RuntimeDefault` (recommended), `Localhost`, `Unconfined`.
+#     type: RuntimeDefault
+#     # localhostProfile: profiles/audit.json   # Path to a node-local seccomp profile — required when type is Localhost
+podSecurityContext: false
 
 # -- Container-level security context.
-# Set to `false` to disable.
-securityContext:
-  allowPrivilegeEscalation: false             # Prevent the process from gaining more privileges than its parent process
-  readOnlyRootFilesystem: true                # Mount the container's root filesystem as read-only
-  privileged: false                           # Do not run the container with full host privileges
-  capabilities:
-    drop:
-      - ALL                                   # Drop all Linux capabilities as a secure baseline
-    # add:
-    #   - NET_BIND_SERVICE                    # Re-add only if the app needs to bind to privileged ports (< 1024)
+# Set to `false` to disable (default).
+# securityContext:
+#   allowPrivilegeEscalation: false             # Prevent the process from gaining more privileges than its parent process
+#   readOnlyRootFilesystem: true                # Mount the container's root filesystem as read-only
+#   privileged: false                           # Do not run the container with full host privileges
+#   capabilities:
+#     drop:
+#       - ALL                                   # Drop all Linux capabilities as a secure baseline
+#     # add:
+#     #   - NET_BIND_SERVICE                    # Re-add only if the app needs to bind to privileged ports (< 1024)
+securityContext: false
 
 # -- Secret injection configuration via HashiCorp Vault Agent.
 # Set to `false` to disable (default). Provide an object to enable Vault secret injection.
