@@ -34,6 +34,28 @@
                     "description": "Include a prepare step in the agent plan that waits for server-plan to complete. Required for k3s; not needed for RKE2 or single-node clusters.",
                     "type": "boolean"
                 },
+                "volumes": {
+                    "description": "Host paths to mount into the upgrade job container. Useful for making host CA certificates or runtime files available to the upgrade image.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "description": "Name of the volume.",
+                                "type": "string"
+                            },
+                            "source": {
+                                "description": "Path on the host to mount.",
+                                "type": "string"
+                            },
+                            "destination": {
+                                "description": "Path inside the upgrade container to mount the volume at.",
+                                "type": "string"
+                            }
+                        },
+                        "required": ["name", "source", "destination"]
+                    }
+                },
                 "window": {
                     "description": "Maintenance window during which upgrades are allowed.",
                     "type": "object",

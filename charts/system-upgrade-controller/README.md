@@ -67,10 +67,36 @@ upgrade:
 | `upgrade.concurrency` | `1` | Number of nodes to upgrade simultaneously |
 | `upgrade.cordon` | `true` | Cordon nodes before upgrading |
 | `upgrade.agentPrepare` | `true` | Include a prepare step in the agent plan that waits for server-plan to complete. Required for k3s; not needed for RKE2 or single-node clusters. |
+| `upgrade.volumes` | `[]` | Host paths to mount into the upgrade job container. See [Host path volumes](#host-path-volumes). |
 | `upgrade.window.days` | `[monday]` | Days of the week the maintenance window is active |
 | `upgrade.window.startTime` | `"04:00"` | Start of maintenance window (24h) |
 | `upgrade.window.endTime` | `"05:00"` | End of maintenance window (24h) |
 | `upgrade.window.timeZone` | `UTC` | Timezone for the maintenance window |
+
+## Host path volumes
+
+Some distributions store CA certificates in non-standard locations, which can cause the upgrade job to fail when fetching release information over HTTPS. For example, on RHEL/Fedora-based nodes `/etc/ssl` contains symlinks that point into `/etc/pki`, which isn't available inside the upgrade container by default.
+
+Use `upgrade.volumes` to mount host paths into the upgrade job pod:
+
+```yaml
+upgrade:
+  volumes:
+    - name: host-pki
+      source: /etc/pki
+      destination: /etc/pki
+    - name: host-run
+      source: /run
+      destination: /run
+```
+
+Each entry requires:
+
+| Field | Description |
+|-------|-------------|
+| `name` | Volume name (must be unique within the list) |
+| `source` | Absolute path on the host node |
+| `destination` | Absolute path inside the upgrade container |
 
 ## Resources Created
 

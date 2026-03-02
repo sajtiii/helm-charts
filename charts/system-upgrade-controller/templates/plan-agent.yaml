@@ -20,6 +20,10 @@ spec:
   serviceAccountName: system-upgrade
   upgrade:
     image: {{ .Values.upgrade.image }}
+    {{- if .Values.upgrade.volumes }}
+    volumes:
+      {{- toYaml .Values.upgrade.volumes | nindent 4 }}
+    {{- end }}
   {{- if .Values.version }}
   version: {{ .Values.version | quote }}
   {{- else }}

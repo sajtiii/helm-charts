@@ -23,6 +23,15 @@ upgrade:
   # needed for RKE2 or single-node clusters.
   agentPrepare: true
 
+  # volumes mounts host paths into the upgrade job container.
+  # Each entry requires name, source (host path), and destination (container path).
+  # Example:
+  #   volumes:
+  #     - name: host-run
+  #       source: /run
+  #       destination: /run
+  volumes: []
+
   window:
     days:
       - monday
