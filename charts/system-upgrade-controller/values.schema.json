@@ -44,16 +44,12 @@
                                 "description": "Name of the volume.",
                                 "type": "string"
                             },
-                            "source": {
-                                "description": "Path on the host to mount.",
-                                "type": "string"
-                            },
-                            "destination": {
-                                "description": "Path inside the upgrade container to mount the volume at.",
+                            "path": {
+                                "description": "Absolute host path to mount. Used as both the hostPath source and the mount path inside the container.",
                                 "type": "string"
                             }
                         },
-                        "required": ["name", "source", "destination"]
+                        "required": ["name", "path"]
                     }
                 },
                 "window": {

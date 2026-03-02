@@ -78,6 +78,11 @@ spec:
           readOnly: true
         - mountPath: /tmp
           name: tmp
+        {{- range .Values.upgrade.volumes }}
+        - mountPath: {{ .path }}
+          name: {{ .name }}
+          readOnly: true
+        {{- end }}
       serviceAccountName: system-upgrade
       tolerations:
       - key: CriticalAddonsOnly
@@ -109,3 +114,9 @@ spec:
           type: DirectoryOrCreate
       - name: tmp
         emptyDir: {}
+      {{- range .Values.upgrade.volumes }}
+      - name: {{ .name }}
+        hostPath:
+          path: {{ .path }}
+          type: {{ .type | default "Directory" }}
+      {{- end }}

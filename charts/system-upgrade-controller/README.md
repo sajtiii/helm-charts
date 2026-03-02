@@ -67,7 +67,7 @@ upgrade:
 | `upgrade.concurrency` | `1` | Number of nodes to upgrade simultaneously |
 | `upgrade.cordon` | `true` | Cordon nodes before upgrading |
 | `upgrade.agentPrepare` | `true` | Include a prepare step in the agent plan that waits for server-plan to complete. Required for k3s; not needed for RKE2 or single-node clusters. |
-| `upgrade.volumes` | `[]` | Host paths to mount into the upgrade job container. See [Host path volumes](#host-path-volumes). |
+| `upgrade.volumes` | `[]` | Host paths to mount into the upgrade job container (same path on host and in container). See [Host path volumes](#host-path-volumes). |
 | `upgrade.window.days` | `[monday]` | Days of the week the maintenance window is active |
 | `upgrade.window.startTime` | `"04:00"` | Start of maintenance window (24h) |
 | `upgrade.window.endTime` | `"05:00"` | End of maintenance window (24h) |
@@ -83,11 +83,9 @@ Use `upgrade.volumes` to mount host paths into the upgrade job pod:
 upgrade:
   volumes:
     - name: host-pki
-      source: /etc/pki
-      destination: /etc/pki
+      path: /etc/pki
     - name: host-run
-      source: /run
-      destination: /run
+      path: /run
 ```
 
 Each entry requires:
@@ -95,8 +93,7 @@ Each entry requires:
 | Field | Description |
 |-------|-------------|
 | `name` | Volume name (must be unique within the list) |
-| `source` | Absolute path on the host node |
-| `destination` | Absolute path inside the upgrade container |
+| `path` | Absolute host path — mounted at the same path inside the container |
 
 ## Resources Created
 

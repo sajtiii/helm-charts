@@ -24,12 +24,11 @@ upgrade:
   agentPrepare: true
 
   # volumes mounts host paths into the upgrade job container.
-  # Each entry requires name, source (host path), and destination (container path).
+  # Each entry requires name, path (host path), and type (host path type).
   # Example:
   #   volumes:
   #     - name: host-run
-  #       source: /run
-  #       destination: /run
+  #       path: /run
   volumes: []
 
   window:
