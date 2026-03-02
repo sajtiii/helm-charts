@@ -13,7 +13,7 @@ tests:
           of: v1
       - equal:
           path: metadata.name
-          value: web-app-myapp
+          value: myapp
       - equal:
           path: spec.clusterIP
           value: None
@@ -27,7 +27,7 @@ tests:
           path: spec.ports
           content:
             name: http
-            port: 80
+            port: 8080
             protocol: TCP
             targetPort: http
 
@@ -51,7 +51,7 @@ tests:
           of: Service
       - equal:
           path: metadata.name
-          value: web-app-myapp-canary
+          value: myapp-canary
 
   - it: should render TraefikService for canary strategy
     set:
@@ -66,7 +66,7 @@ tests:
           of: traefik.io/v1alpha1
       - equal:
           path: metadata.name
-          value: web-app-myapp
+          value: myapp
 
   - it: should set initial weights on TraefikService for canary strategy
     set:
@@ -102,4 +102,4 @@ tests:
           of: Service
       - equal:
           path: metadata.name
-          value: web-app-myapp-preview
+          value: myapp-preview

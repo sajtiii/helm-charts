@@ -51,7 +51,7 @@ tests:
           of: traefik.io/v1alpha1
       - equal:
           path: metadata.name
-          value: web-app-myapp-myapp-api
+          value: myapp-myapp-api
 
   - it: should set ipAllowList source range
     set:

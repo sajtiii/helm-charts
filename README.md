@@ -7,6 +7,7 @@ A collection of Helm charts for deploying web applications to Kubernetes.
 | Chart | Description |
 |-------|-------------|
 | [web-app](charts/web-app/) | General-purpose chart for deploying web applications with support for advanced deployment strategies, service mesh, secrets management, and autoscaling |
+| [system-upgrade-controller](charts/system-upgrade-controller/) | Automated k3s upgrades via system-upgrade-controller |
 
 ## Usage
 

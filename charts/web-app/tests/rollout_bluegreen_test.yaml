@@ -31,7 +31,7 @@ tests:
           of: argoproj.io/v1alpha1
       - equal:
           path: metadata.name
-          value: web-app-myapp
+          value: myapp
 
   - it: should configure active and preview services
     set:
@@ -41,10 +41,10 @@ tests:
     asserts:
       - equal:
           path: spec.strategy.blueGreen.activeService
-          value: web-app-myapp
+          value: myapp
       - equal:
           path: spec.strategy.blueGreen.previewService
-          value: web-app-myapp-preview
+          value: myapp-preview
 
   - it: should set autoPromotionEnabled to false by default
     set:
