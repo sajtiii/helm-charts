@@ -1,5 +1,16 @@
 apiVersion: v1
 entries:
+  system-upgrade-controller:
+  - apiVersion: v2
+    appVersion: v0.19.0
+    created: "2026-03-02T17:54:08.864160176Z"
+    description: Automated k3s upgrades via system-upgrade-controller
+    digest: 60a56546771305f51e38f19e35c2e156ecf53fb335c44d84184131968a9fab7a
+    name: system-upgrade-controller
+    type: application
+    urls:
+    - https://github.com/sajtiii/helm-charts/releases/download/system-upgrade-controller-0.1.0/system-upgrade-controller-0.1.0.tgz
+    version: 0.1.0
   web:
   - apiVersion: v2
     created: "2024-11-09T12:22:12.379710472Z"
@@ -20,4 +31,4 @@ entries:
     urls:
     - https://github.com/sajtiii/helm-charts/releases/download/web-app-0.1.0/web-app-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-18T09:52:29.1427026Z"
+generated: "2026-03-02T17:54:08.864168601Z"
