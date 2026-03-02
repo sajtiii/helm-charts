@@ -1,0 +1,19 @@
+suite: namespace
+templates:
+  - templates/namespace.yaml
+tests:
+  - it: should create the system-upgrade namespace
+    asserts:
+      - isKind:
+          of: Namespace
+      - isAPIVersion:
+          of: v1
+      - equal:
+          path: metadata.name
+          value: system-upgrade
+
+  - it: should enforce privileged pod security
+    asserts:
+      - equal:
+          path: metadata.labels["pod-security.kubernetes.io/enforce"]
+          value: privileged

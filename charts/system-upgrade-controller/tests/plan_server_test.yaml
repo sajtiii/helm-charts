@@ -1,0 +1,103 @@
+suite: plan-server
+templates:
+  - templates/plan-server.yaml
+tests:
+  - it: should create the server-plan
+    asserts:
+      - isKind:
+          of: Plan
+      - isAPIVersion:
+          of: upgrade.cattle.io/v1
+      - equal:
+          path: metadata.name
+          value: server-plan
+      - equal:
+          path: metadata.namespace
+          value: system-upgrade
+
+  - it: should target control-plane nodes
+    asserts:
+      - equal:
+          path: spec.nodeSelector.matchExpressions[0].key
+          value: node-role.kubernetes.io/control-plane
+      - equal:
+          path: spec.nodeSelector.matchExpressions[0].operator
+          value: In
+
+  - it: should use channel by default
+    asserts:
+      - equal:
+          path: spec.channel
+          value: https://update.k3s.io/v1-release/channels/stable
+      - isNull:
+          path: spec.version
+
+  - it: should use version when set and omit channel
+    set:
+      version: v1.32.2+k3s1
+    asserts:
+      - equal:
+          path: spec.version
+          value: v1.32.2+k3s1
+      - isNull:
+          path: spec.channel
+
+  - it: should use a custom channel
+    set:
+      channel: https://update.rke2.io/v1-release/channels/stable
+    asserts:
+      - equal:
+          path: spec.channel
+          value: https://update.rke2.io/v1-release/channels/stable
+
+  - it: should use the default k3s upgrade image
+    asserts:
+      - equal:
+          path: spec.upgrade.image
+          value: rancher/k3s-upgrade
+
+  - it: should use a custom upgrade image for RKE2
+    set:
+      upgrade.image: rancher/rke2-upgrade
+    asserts:
+      - equal:
+          path: spec.upgrade.image
+          value: rancher/rke2-upgrade
+
+  - it: should set concurrency from values
+    set:
+      upgrade.concurrency: 3
+    asserts:
+      - equal:
+          path: spec.concurrency
+          value: 3
+
+  - it: should set cordon from values
+    set:
+      upgrade.cordon: false
+    asserts:
+      - equal:
+          path: spec.cordon
+          value: false
+
+  - it: should set the maintenance window
+    asserts:
+      - equal:
+          path: spec.window.days
+          value:
+            - monday
+      - equal:
+          path: spec.window.startTime
+          value: "04:00"
+      - equal:
+          path: spec.window.endTime
+          value: "05:00"
+      - equal:
+          path: spec.window.timeZone
+          value: UTC
+
+  - it: should use the system-upgrade service account
+    asserts:
+      - equal:
+          path: spec.serviceAccountName
+          value: system-upgrade

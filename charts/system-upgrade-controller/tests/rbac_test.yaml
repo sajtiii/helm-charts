@@ -1,0 +1,77 @@
+suite: rbac
+templates:
+  - templates/rbac.yaml
+tests:
+  - it: should render 6 RBAC documents
+    asserts:
+      - hasDocuments:
+          count: 6
+
+  - it: should create the system-upgrade-controller Role
+    documentIndex: 0
+    asserts:
+      - isKind:
+          of: Role
+      - equal:
+          path: metadata.name
+          value: system-upgrade-controller
+      - equal:
+          path: metadata.namespace
+          value: system-upgrade
+
+  - it: should create the system-upgrade-controller ClusterRole
+    documentIndex: 1
+    asserts:
+      - isKind:
+          of: ClusterRole
+      - equal:
+          path: metadata.name
+          value: system-upgrade-controller
+
+  - it: should create the system-upgrade-controller-drainer ClusterRole
+    documentIndex: 2
+    asserts:
+      - isKind:
+          of: ClusterRole
+      - equal:
+          path: metadata.name
+          value: system-upgrade-controller-drainer
+
+  - it: should create the system-upgrade RoleBinding
+    documentIndex: 3
+    asserts:
+      - isKind:
+          of: RoleBinding
+      - equal:
+          path: metadata.name
+          value: system-upgrade
+      - equal:
+          path: roleRef.name
+          value: system-upgrade-controller
+      - equal:
+          path: subjects[0].name
+          value: system-upgrade
+
+  - it: should create the system-upgrade ClusterRoleBinding
+    documentIndex: 4
+    asserts:
+      - isKind:
+          of: ClusterRoleBinding
+      - equal:
+          path: metadata.name
+          value: system-upgrade
+      - equal:
+          path: roleRef.name
+          value: system-upgrade-controller
+
+  - it: should create the system-upgrade-drainer ClusterRoleBinding
+    documentIndex: 5
+    asserts:
+      - isKind:
+          of: ClusterRoleBinding
+      - equal:
+          path: metadata.name
+          value: system-upgrade-drainer
+      - equal:
+          path: roleRef.name
+          value: system-upgrade-controller-drainer

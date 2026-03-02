@@ -1,0 +1,31 @@
+controllerVersion: v0.19.0
+
+# channel is used by Plans unless version is set.
+# k3s:  https://update.k3s.io/v1-release/channels/stable
+# RKE2: https://update.rke2.io/v1-release/channels/stable
+channel: https://update.k3s.io/v1-release/channels/stable
+
+# version pins Plans to a specific release (e.g. "v1.32.2+k3s1").
+# When set, channel is ignored.
+version: ""
+
+upgrade:
+  # image is the distro-specific upgrade job image.
+  # k3s:  rancher/k3s-upgrade
+  # RKE2: rancher/rke2-upgrade
+  image: rancher/k3s-upgrade
+
+  concurrency: 1
+  cordon: true
+
+  # agentPrepare controls whether the agent plan includes a prepare step
+  # that waits for the server plan to complete. Required for k3s; not
+  # needed for RKE2 or single-node clusters.
+  agentPrepare: true
+
+  window:
+    days:
+      - monday
+    startTime: "04:00"
+    endTime: "05:00"
+    timeZone: UTC

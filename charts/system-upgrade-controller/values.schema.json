@@ -1,0 +1,72 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "controllerVersion": {
+            "description": "Image tag for rancher/system-upgrade-controller.",
+            "type": "string"
+        },
+        "channel": {
+            "description": "Release channel URL used by Plans. Ignored when `version` is set. Examples: k3s: https://update.k3s.io/v1-release/channels/stable, RKE2: https://update.rke2.io/v1-release/channels/stable.",
+            "type": "string"
+        },
+        "version": {
+            "description": "Pin Plans to a specific release (e.g. \"v1.32.2+k3s1\"). When set, `channel` is not used.",
+            "type": "string"
+        },
+        "upgrade": {
+            "description": "Upgrade Plan configuration.",
+            "type": "object",
+            "properties": {
+                "image": {
+                    "description": "Distro-specific upgrade job image. k3s: rancher/k3s-upgrade, RKE2: rancher/rke2-upgrade.",
+                    "type": "string"
+                },
+                "concurrency": {
+                    "description": "Number of nodes to upgrade simultaneously.",
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "cordon": {
+                    "description": "Cordon nodes before upgrading.",
+                    "type": "boolean"
+                },
+                "agentPrepare": {
+                    "description": "Include a prepare step in the agent plan that waits for server-plan to complete. Required for k3s; not needed for RKE2 or single-node clusters.",
+                    "type": "boolean"
+                },
+                "window": {
+                    "description": "Maintenance window during which upgrades are allowed.",
+                    "type": "object",
+                    "properties": {
+                        "days": {
+                            "description": "Days of the week the window is active.",
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                            },
+                            "minItems": 1
+                        },
+                        "startTime": {
+                            "description": "Start time of the window in 24h format (e.g. \"04:00\").",
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        "endTime": {
+                            "description": "End time of the window in 24h format (e.g. \"05:00\").",
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        "timeZone": {
+                            "description": "IANA timezone for the maintenance window (e.g. \"UTC\", \"Europe/Berlin\").",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["days", "startTime", "endTime", "timeZone"]
+                }
+            },
+            "required": ["image", "concurrency", "cordon", "agentPrepare", "window"]
+        }
+    },
+    "required": ["controllerVersion", "upgrade"]
+}

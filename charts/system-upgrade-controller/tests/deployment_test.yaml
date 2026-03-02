@@ -1,0 +1,72 @@
+suite: deployment
+templates:
+  - templates/deployment.yaml
+tests:
+  - it: should create a Deployment
+    asserts:
+      - isKind:
+          of: Deployment
+      - isAPIVersion:
+          of: apps/v1
+
+  - it: should deploy in the system-upgrade namespace
+    asserts:
+      - equal:
+          path: metadata.name
+          value: system-upgrade-controller
+      - equal:
+          path: metadata.namespace
+          value: system-upgrade
+
+  - it: should use the controllerVersion for the container image
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: rancher/system-upgrade-controller:v0.19.0
+
+  - it: should use a custom controllerVersion
+    set:
+      controllerVersion: v0.20.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: rancher/system-upgrade-controller:v0.20.0
+
+  - it: should use the system-upgrade service account
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: system-upgrade
+
+  - it: should use Recreate strategy
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should run as non-root
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 65534
+
+  - it: should schedule only on control-plane nodes
+    asserts:
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key
+          value: node-role.kubernetes.io/control-plane
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator
+          value: Exists
+
+  - it: should tolerate control-plane taints
+    asserts:
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            effect: NoSchedule
+            key: node-role.kubernetes.io/control-plane
+            operator: Exists

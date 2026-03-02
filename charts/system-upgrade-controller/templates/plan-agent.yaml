@@ -1,0 +1,32 @@
+apiVersion: upgrade.cattle.io/v1
+kind: Plan
+metadata:
+  name: agent-plan
+  namespace: system-upgrade
+spec:
+  concurrency: {{ .Values.upgrade.concurrency }}
+  cordon: {{ .Values.upgrade.cordon }}
+  nodeSelector:
+    matchExpressions:
+    - key: node-role.kubernetes.io/control-plane
+      operator: DoesNotExist
+  {{- if .Values.upgrade.agentPrepare }}
+  prepare:
+    image: {{ .Values.upgrade.image }}
+    args:
+    - prepare
+    - server-plan
+  {{- end }}
+  serviceAccountName: system-upgrade
+  upgrade:
+    image: {{ .Values.upgrade.image }}
+  {{- if .Values.version }}
+  version: {{ .Values.version | quote }}
+  {{- else }}
+  channel: {{ .Values.channel }}
+  {{- end }}
+  window:
+    days: {{ .Values.upgrade.window.days | toJson }}
+    startTime: {{ .Values.upgrade.window.startTime | quote }}
+    endTime: {{ .Values.upgrade.window.endTime | quote }}
+    timeZone: {{ .Values.upgrade.window.timeZone | quote }}
