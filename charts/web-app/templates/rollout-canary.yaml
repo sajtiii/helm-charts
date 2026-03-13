@@ -4,10 +4,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
   name: {{ include "name" $ }}
-  {{- if $.Values.image.autoUpdate }}
-  annotations:
-    {{- include "image.autoUpdate.annotations" $ | nindent 4 }}
-  {{- end }}
 spec:
   strategy:
     canary:

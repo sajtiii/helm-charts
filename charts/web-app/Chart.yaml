@@ -5,7 +5,7 @@ apiVersion: v2
 name: web-app
 description: Helm chart to use across common web apps
 type: application
-version: 0.1.0
+version: 0.2.0
 
 # The following are needed to use this template:
 # Traefik installation

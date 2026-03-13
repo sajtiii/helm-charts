@@ -215,15 +215,6 @@ tests:
             containerPort: 8080
             protocol: TCP
 
-  - it: should include autoUpdate annotations when enabled
-    set:
-      name: myapp
-      image.repository: nginx
-      image.autoUpdate: true
-    asserts:
-      - isNotNull:
-          path: metadata.annotations
-
   - it: should add linkerd annotations when serviceMesh is enabled
     set:
       name: myapp
@@ -258,8 +249,7 @@ tests:
     set:
       name: myapp
       image.repository: nginx
-      image.pullSecrets:
-        - name: my-registry-secret
+      image.pullSecret: my-registry-secret
     asserts:
       - contains:
           path: spec.template.spec.imagePullSecrets

@@ -56,9 +56,9 @@ template:
     {{- end }}
     serviceAccountName: {{ .serviceAccount.name | default (include "name" $) }}
     priorityClassName: {{ $name }}
-    {{- if .image.pullSecrets }}
+    {{- if .image.pullSecret }}
     imagePullSecrets:
-      {{- toYaml .image.pullSecrets | nindent 6 }}
+      - name: {{ .image.pullSecret }}
     {{- end }}
     {{- if .tolerations }}
     tolerations:

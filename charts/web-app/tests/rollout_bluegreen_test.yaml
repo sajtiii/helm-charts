@@ -76,12 +76,4 @@ tests:
           path: spec.strategy.blueGreen.previewReplicaCount
           value: 1
 
-  - it: should include autoUpdate annotations when enabled
-    set:
-      name: myapp
-      image.repository: nginx
-      rollout.strategy: bluegreen
-      image.autoUpdate: true
-    asserts:
-      - isNotNull:
-          path: metadata.annotations
+

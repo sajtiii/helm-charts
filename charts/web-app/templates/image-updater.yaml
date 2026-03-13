@@ -1,0 +1,31 @@
+{{- if .Values.image.autoUpdate }}
+{{- $config := kindIs "map" .Values.image.autoUpdate | ternary .Values.image.autoUpdate dict }}
+{{- $strategy := $config.strategy | default "digest" }}
+{{- $namespace := $config.argoNamespace | default "argocd" }}
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: {{ include "name" . }}
+  namespace: {{ $namespace }}
+spec:
+  applicationRefs:
+    - namePattern: {{ .Values.name | default .Release.Name | quote }}
+      images:
+        - alias: "app"
+          imageName: {{ .Values.image.repository | quote }}
+          manifestTargets:
+            helm:
+              name: "image.repository"
+              tag: "image.tag"
+          commonUpdateSettings:
+            updateStrategy: {{ $strategy | quote }}
+            {{- if $config.allowTags }}
+            allowTags: {{ $config.allowTags | quote }}
+            {{- end }}
+            {{- if $config.ignoreTags }}
+            ignoreTags: {{ $config.ignoreTags | quote }}
+            {{- end }}
+            {{- if .Values.image.pullSecret }}
+            pullSecret: {{ printf "pullsecret:%s/%s" .Release.Namespace .Values.image.pullSecret | quote }}
+            {{- end }}
+{{- end }}

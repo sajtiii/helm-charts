@@ -3,10 +3,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "name" $ }}
-  {{- if .Values.image.autoUpdate }}
-  annotations:
-    {{- include "image.autoUpdate.annotations" $ | nindent 4 }}
-  {{- end }}
 spec:
   strategy:
     {{- $rolloutStrategy := eq .Values.rollout.strategy "recreate" | ternary "Recreate" "RollingUpdate" }}

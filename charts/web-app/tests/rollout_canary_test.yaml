@@ -75,12 +75,4 @@ tests:
           path: spec.strategy.canary.analysis.templates[0].templateName
           value: myapp-success-rate
 
-  - it: should include autoUpdate annotations when enabled
-    set:
-      name: myapp
-      image.repository: nginx
-      rollout.strategy: canary
-      image.autoUpdate: true
-    asserts:
-      - isNotNull:
-          path: metadata.annotations
+
