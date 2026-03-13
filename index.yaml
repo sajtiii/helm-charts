@@ -23,6 +23,15 @@ entries:
     version: 0.1.0
   web-app:
   - apiVersion: v2
+    created: "2026-03-13T12:42:18.825955585Z"
+    description: Helm chart to use across common web apps
+    digest: 00c73f0b31a944dfcd58072675e8aa89b9e9587eeb4b436ea582823f2809f340
+    name: web-app
+    type: application
+    urls:
+    - https://github.com/sajtiii/helm-charts/releases/download/web-app-0.2.0/web-app-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
     created: "2026-02-18T09:52:29.142690146Z"
     description: Helm chart to use across common web apps
     digest: fab2a223c651218b27ac492ff50a287fbc7e2ed4e5349de0092c6b6e369a0c48
@@ -31,4 +40,4 @@ entries:
     urls:
     - https://github.com/sajtiii/helm-charts/releases/download/web-app-0.1.0/web-app-0.1.0.tgz
     version: 0.1.0
-generated: "2026-03-02T17:54:08.864168601Z"
+generated: "2026-03-13T12:42:18.825964682Z"
