@@ -39,29 +39,6 @@
                 "pullSecret": {
                     "description": "Name of the Kubernetes Secret containing registry credentials for authenticating against private container registries.",
                     "type": "string"
-                },
-                "autoUpdate": {
-                    "description": "ArgoCD Image Updater integration. Creates an ImageUpdater CR. Set to `false` to disable.",
-                    "type": ["object", "boolean"],
-                    "properties": {
-                        "argoNamespace": {
-                            "description": "Namespace where the ImageUpdater CR is created. Defaults to `argocd`.",
-                            "type": "string"
-                        },
-                        "strategy": {
-                            "description": "Image update strategy.",
-                            "type": "string",
-                            "enum": ["semver", "latest", "digest", "name"]
-                        },
-                        "allowTags": {
-                            "description": "Tag filter expression (e.g. `regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$`).",
-                            "type": "string"
-                        },
-                        "ignoreTags": {
-                            "description": "Comma-separated tags to ignore (e.g. `latest,dev`).",
-                            "type": "string"
-                        }
-                    }
                 }
             },
             "required": ["repository", "tag", "pullPolicy"]

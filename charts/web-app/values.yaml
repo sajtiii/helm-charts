@@ -22,17 +22,6 @@ image:
   # Equivalent to `CMD` in a Dockerfile.
   # args: "" or []
 
-  # -- ArgoCD Image Updater integration. Creates an `ImageUpdater` CR that watches an ArgoCD Application.
-  # Set to `true` to enable with default settings (digest strategy),
-  # or provide a configuration object to customize the behavior.
-  autoUpdate: false
-  # autoUpdate: true                          # Enable with all defaults (strategy: digest)
-  # autoUpdate:                               # Enable with custom configuration
-  #   argoNamespace: "argocd"                 # Namespace where the ImageUpdater CR is created (default: argocd)
-  #   strategy: digest                        # Update strategy: digest (default), semver, latest, or name
-  #   allowTags: "regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$"  # Optional regex filter for allowed tags
-  #   ignoreTags: "latest,dev"                # Optional comma-separated list of tags to ignore
-
 
 # -- Number of pod replicas to run. Mutually exclusive with `autoscaling`.
 replicas: 1
